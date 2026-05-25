@@ -1,4 +1,4 @@
-# Gym Log App - Task List
+# Mettle App - Task List
 
 ## TODO
 - [x] Initialize Flutter Project with basic dependencies (Riverpod, Drift, Supabase).

@@ -14,7 +14,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gym Log'),
+        title: const Text('Mettle'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

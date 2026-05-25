@@ -1,4 +1,4 @@
-# Gym Log Application Design Document
+# Mettle Application Design Document
 
 ## Background & Motivation
 The user wants to build a mobile application to log gym progress. The app must schedule routines to specific days (e.g., Monday's workout), track workouts with charts, and critically, show the previous weight and reps for each set during an active session.

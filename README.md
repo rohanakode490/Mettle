@@ -1,17 +1,39 @@
-# gym_log
+# Mettle
 
-A new Flutter project.
+Mettle is a powerful, offline-first gym progress tracker built with Flutter. It focuses on providing real-time historical context during your workouts to help you push your limits.
+
+## Features
+
+- **Today's Focus**: Instantly see what's scheduled for today and jump into action.
+- **Contextual Logging**: See your previous session's weight and reps inline for every set. No more guessing.
+- **Routine Builder**: Easily create and reorder workout templates with a gym-friendly interface.
+- **Weekly Scheduler**: Map your routines to days of the week for a structured training plan.
+- **Offline-First**: Powered by a local SQLite database (Drift) for blazing-fast performance without needing an internet connection.
+- **State-of-the-Art Management**: Built with Riverpod for a reactive and robust user experience.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+1.  Ensure you have the Flutter SDK installed.
+2.  Clone the repository.
+3.  Run `flutter pub get`.
+4.  Run `dart run build_runner build` to generate the database and state management code.
+5.  Launch the app with `flutter run`.
 
-A few resources to get you started if this is your first Flutter project:
+## Tech Stack
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- **Framework**: Flutter
+- **State Management**: Riverpod
+- **Local Database**: Drift (SQLite)
+- **Backend (Planned)**: Supabase for cloud sync and authentication.
+- **Charts**: fl_chart for progress visualization.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Architecture
+
+Mettle follows a modular feature-based architecture:
+- `core/`: Shared database, providers, and utilities.
+- `features/routine/`: Logic and UI for managing workout templates.
+- `features/schedule/`: Daily overview and weekly planning.
+- `features/workout/`: The active logging experience.
+
+---
+*Mettle: The resilience to persevere and the spirit to overcome.*
