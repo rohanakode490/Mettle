@@ -48,4 +48,4 @@ final class SyncRepositoryProvider
   }
 }
 
-String _$syncRepositoryHash() => r'd5e6ac937fa023cbbf95d409b2daba39313d8a72';
+String _$syncRepositoryHash() => r'af6ebee70c2aeec04e3f8fa17589d3268c0be85b';

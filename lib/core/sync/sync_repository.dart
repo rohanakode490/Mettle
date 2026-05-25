@@ -103,7 +103,7 @@ class SyncRepository {
 }
 
 @riverpod
-SyncRepository syncRepository(SyncRepositoryRef ref) {
+SyncRepository syncRepository(Ref ref) {
   return SyncRepository(
     db: ref.watch(databaseProvider),
     supabase: ref.watch(supabaseClientProvider),

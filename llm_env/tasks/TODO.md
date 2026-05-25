@@ -7,6 +7,7 @@
 - [x] Implement Home/Schedule screen.
 - [x] Implement Active Workout tracker with historical data fetch.
 - [x] Implement Analytics/Charts.
+- [x] Create and implement 'minimalist-flutter-ux' skill for beginner-focused UI.
 
 ## IN PROGRESS
 - None
@@ -20,3 +21,4 @@
 - [x] Implement Active Workout tracker with historical data fetch.
 - [x] Set up Supabase sync background worker.
 - [x] Implement Analytics/Charts.
+- [x] Create 'minimalist-flutter-ux' skill and refactor key screens.

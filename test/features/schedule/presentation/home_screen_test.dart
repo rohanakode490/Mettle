@@ -30,8 +30,12 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text('No routine scheduled for today.'), findsOneWidget);
-    expect(find.text('Rest Day'), findsNWidgets(7));
+    expect(find.text('Rest & Recover'), findsOneWidget);
+    expect(find.text('Take it easy today, or pick a new goal.'), findsOneWidget);
+    
+    // Check for weekly schedule day bubbles
+    expect(find.text('Mon'), findsOneWidget);
+    expect(find.text('Sun'), findsOneWidget);
 
     // Force disposal of the widget tree to trigger stream unsubscription
     await tester.pumpWidget(Container());
@@ -59,6 +63,7 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
+    expect(find.text('Today\'s Program'), findsOneWidget);
     expect(find.text('Massive Quads'), findsAtLeast(1));
     expect(find.text('START WORKOUT'), findsOneWidget);
 

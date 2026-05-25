@@ -78,7 +78,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   void _finishWorkout() async {
     final repo = ref.read(workoutRepositoryProvider);
     
-    // Log all done sets
     for (final exerciseId in _sets.keys) {
       final sets = _sets[exerciseId]!;
       for (var i = 0; i < sets.length; i++) {
@@ -111,81 +110,153 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.routine?.name ?? 'Free Workout'),
+        title: Text(widget.routine?.name ?? 'Free Session', 
+          style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          TextButton(
-            onPressed: _finishWorkout,
-            child: const Text('FINISH', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: TextButton(
+              onPressed: _finishWorkout,
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.primary,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              child: const Text('FINISH'),
+            ),
           ),
         ],
       ),
       body: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         itemCount: _exercises.length,
         itemBuilder: (context, index) {
           final exercise = _exercises[index];
           final sets = _sets[exercise.id] ?? [];
-          return Card(
-            margin: const EdgeInsets.all(8.0),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(exercise.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  ...sets.asMap().entries.map((entry) {
-                    final setIndex = entry.key;
-                    final setDraft = entry.value;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Row(
-                        children: [
-                          CircleAvatar(radius: 12, child: Text('${setIndex + 1}', style: const TextStyle(fontSize: 12))),
-                          const SizedBox(width: 8),
-                          if (setDraft.previousSet != null)
-                            Expanded(
-                              child: Text(
-                                'Prev: ${setDraft.previousSet!.weight}kg x ${setDraft.previousSet!.reps}',
-                                style: const TextStyle(color: Colors.grey, fontSize: 12),
-                              ),
-                            )
-                          else
-                            const Spacer(),
-                          SizedBox(
-                            width: 60,
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(hintText: 'kg'),
-                              onChanged: (v) => setDraft.weight = double.tryParse(v) ?? 0,
+          return Container(
+            margin: const EdgeInsets.only(bottom: 24.0),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(exercise.name, 
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                ...sets.asMap().entries.map((entry) {
+                  final setIndex = entry.key;
+                  final setDraft = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text('${setIndex + 1}', 
+                              style: TextStyle(fontSize: 12, color: Colors.grey[700], fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        if (setDraft.previousSet != null)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('PREVIOUS', 
+                                  style: TextStyle(fontSize: 9, color: Colors.grey[400], fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                                Text(
+                                  '${setDraft.previousSet!.weight}kg × ${setDraft.previousSet!.reps}',
+                                  style: TextStyle(color: Colors.grey[400], fontSize: 13, fontWeight: FontWeight.w500),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 40,
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(hintText: 'reps'),
-                              onChanged: (v) => setDraft.reps = int.tryParse(v) ?? 0,
-                            ),
-                          ),
-                          Checkbox(
-                            value: setDraft.isDone,
-                            onChanged: (v) => setState(() => setDraft.isDone = v ?? false),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  TextButton.icon(
-                    onPressed: () => _addSet(exercise.id),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Set'),
+                          )
+                        else
+                          const Spacer(),
+                        _CompactInputField(
+                          hint: 'kg',
+                          onChanged: (v) => setDraft.weight = double.tryParse(v) ?? 0,
+                        ),
+                        const SizedBox(width: 8),
+                        _CompactInputField(
+                          hint: 'reps',
+                          width: 60,
+                          onChanged: (v) => setDraft.reps = int.tryParse(v) ?? 0,
+                        ),
+                        const SizedBox(width: 8),
+                        Checkbox(
+                          value: setDraft.isDone,
+                          activeColor: Theme.of(context).colorScheme.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          onChanged: (v) => setState(() => setDraft.isDone = v ?? false),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => _addSet(exercise.id),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey[600],
                   ),
-                ],
-              ),
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  label: const Text('Add Set', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _CompactInputField extends StatelessWidget {
+  final String hint;
+  final double width;
+  final ValueChanged<String> onChanged;
+
+  const _CompactInputField({
+    required this.hint,
+    this.width = 70,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: 44,
+      child: TextField(
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        onChanged: onChanged,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey[300], fontWeight: FontWeight.normal),
+          filled: true,
+          fillColor: Colors.grey[50],
+          contentPadding: EdgeInsets.zero,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+        ),
       ),
     );
   }
