@@ -4,6 +4,7 @@ import '../domain/schedule_repository.dart';
 import '../../routine/domain/routine_repository.dart';
 import '../../routine/presentation/routine_list_screen.dart';
 import '../../workout/presentation/active_workout_screen.dart';
+import '../../analytics/presentation/analytics_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -15,6 +16,16 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mettle'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

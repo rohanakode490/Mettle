@@ -11,6 +11,7 @@ class Exercises extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
   TextColumn get muscleGroup => text().nullable()();
+  TextColumn get remoteId => text().nullable()();
 }
 
 @DataClassName('Routine')
@@ -18,6 +19,9 @@ class Routines extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get remoteId => text().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
 }
 
 @DataClassName('RoutineExercise')
@@ -26,6 +30,9 @@ class RoutineExercises extends Table {
   IntColumn get routineId => integer().references(Routines, #id)();
   IntColumn get exerciseId => integer().references(Exercises, #id)();
   IntColumn get orderIndex => integer()();
+  TextColumn get remoteId => text().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
 }
 
 @DataClassName('Schedule')
@@ -33,6 +40,9 @@ class Schedules extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get routineId => integer().references(Routines, #id)();
   IntColumn get dayOfWeek => integer().unique()(); // 1-7 (Monday-Sunday)
+  TextColumn get remoteId => text().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
 }
 
 @DataClassName('WorkoutSession')
@@ -42,6 +52,9 @@ class WorkoutSessions extends Table {
   DateTimeColumn get startTime => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get endTime => dateTime().nullable()();
   TextColumn get note => text().nullable()();
+  TextColumn get remoteId => text().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
 }
 
 @DataClassName('SetLog')
@@ -53,6 +66,9 @@ class SetLogs extends Table {
   IntColumn get reps => integer()();
   IntColumn get orderIndex => integer()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get remoteId => text().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
 }
 
 @DriftDatabase(tables: [Exercises, Routines, RoutineExercises, Schedules, WorkoutSessions, SetLogs])
@@ -61,7 +77,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   Future<void> seedExercises() async {
     final count = await select(exercises).get().then((value) => value.length);
