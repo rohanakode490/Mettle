@@ -58,6 +58,7 @@ class SetLogs extends Table {
 @DriftDatabase(tables: [Exercises, Routines, RoutineExercises, Schedules, WorkoutSessions, SetLogs])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+  AppDatabase.forTesting(QueryExecutor super.e);
 
   @override
   int get schemaVersion => 1;
