@@ -1,4 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:workmanager/workmanager.dart';
 import 'sync_repository.dart';
 import '../database/database_provider.dart';
@@ -9,6 +12,19 @@ const syncTaskName = "com.mettle.syncTask";
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
+    // Background isolate needs its own initialization
+    WidgetsFlutterBinding.ensureInitialized();
+    try {
+      await dotenv.load(fileName: ".env");
+      await Supabase.initialize(
+        url: dotenv.env['SUPABASE_URL'] ?? '',
+        anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+      );
+    } catch (e) {
+      print('Background initialization failed: $e');
+      return false;
+    }
+
     // Create a new ProviderContainer for the background task
     final container = ProviderContainer();
     try {
