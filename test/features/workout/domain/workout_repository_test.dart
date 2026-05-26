@@ -17,66 +17,82 @@ void main() {
     await db.close();
   });
 
-  group('WorkoutRepository - getPreviousSet', () {
-    test('should return the most recent set for same exercise and order index', () async {
-      // 1. Setup: Add an exercise
-      final exerciseId = await db.into(db.exercises).insert(
-            ExercisesCompanion.insert(name: 'Bench Press', muscleGroup: const Value('Chest')),
-          );
+  group('WorkoutRepository', () {
+    test('logSet and getTodaySets', () async {
+      final exerciseName = 'Bench Press';
+      final routineId = 'r1';
+      final dayIndex = 1;
 
-      // 2. Setup: Create two past sessions
-      final session1Id = await repository.startWorkout(null);
-      await db.into(db.setLogs).insert(SetLogsCompanion.insert(
-        workoutSessionId: session1Id,
-        exerciseId: exerciseId,
+      await repository.logSet(
+        exerciseName: exerciseName,
         weight: 60.0,
         reps: 10,
-        orderIndex: 0,
-        createdAt: Value(DateTime.now().subtract(const Duration(minutes: 10))),
-      ));
-      await repository.finishWorkout(session1Id, null);
-
-      final session2Id = await repository.startWorkout(null);
-      await db.into(db.setLogs).insert(SetLogsCompanion.insert(
-        workoutSessionId: session2Id,
-        exerciseId: exerciseId,
-        weight: 65.0,
-        reps: 8,
-        orderIndex: 0,
-        createdAt: Value(DateTime.now().subtract(const Duration(minutes: 5))),
-      ));
-      await repository.finishWorkout(session2Id, null);
-
-      // 3. Current Session
-      final currentSessionId = await repository.startWorkout(null);
-
-      // 4. Action: Fetch previous set for "Bench Press" at index 0
-      final previousSet = await repository.getPreviousSet(
-        exerciseId: exerciseId,
-        orderIndex: 0,
-        currentSessionId: currentSessionId,
+        routineId: routineId,
+        dayIndex: dayIndex,
       );
 
-      // 5. Assert: Should be from session 2 (65kg x 8)
-      expect(previousSet, isNotNull);
-      expect(previousSet!.weight, 65.0);
-      expect(previousSet!.reps, 8);
-      expect(previousSet!.workoutSessionId, session2Id);
+      final todaySets = await repository.getTodaySets(routineId, dayIndex);
+      expect(todaySets.length, 1);
+      expect(todaySets.first.exerciseName, exerciseName);
+      expect(todaySets.first.weightKg, 60.0);
+      expect(todaySets.first.reps, 10);
     });
 
-    test('should return null if no previous sets exist', () async {
-      final exerciseId = await db.into(db.exercises).insert(
-            ExercisesCompanion.insert(name: 'Squat', muscleGroup: const Value('Legs')),
-          );
-      final currentSessionId = await repository.startWorkout(null);
+    test('getLastSet should return most recent set for exercise', () async {
+      final exerciseName = 'Squat';
+      
+      // Older set
+      await db.into(db.setLogs).insert(SetLogsCompanion.insert(
+        id: '1',
+        exerciseName: exerciseName,
+        weightKg: 80.0,
+        reps: 5,
+        routineId: 'r1',
+        dayIndex: 1,
+        timestamp: Value(DateTime.now().subtract(const Duration(days: 1))),
+      ));
 
-      final previousSet = await repository.getPreviousSet(
-        exerciseId: exerciseId,
-        orderIndex: 0,
-        currentSessionId: currentSessionId,
+      // Newer set
+      await db.into(db.setLogs).insert(SetLogsCompanion.insert(
+        id: '2',
+        exerciseName: exerciseName,
+        weightKg: 85.0,
+        reps: 5,
+        routineId: 'r1',
+        dayIndex: 1,
+        timestamp: Value(DateTime.now()),
+      ));
+
+      final lastSet = await repository.getLastSet(exerciseName);
+      expect(lastSet, isNotNull);
+      expect(lastSet!.weightKg, 85.0);
+    });
+
+    test('updateSetLog and deleteSetLog', () async {
+      final id = 'test-id';
+      await db.into(db.setLogs).insert(SetLogsCompanion.insert(
+        id: id,
+        exerciseName: 'Deadlift',
+        weightKg: 100.0,
+        reps: 5,
+        routineId: 'r1',
+        dayIndex: 1,
+      ));
+
+      await repository.updateSetLog(
+        id: id,
+        weight: 110.0,
+        reps: 3,
+        setType: 'work',
       );
 
-      expect(previousSet, isNull);
+      final updated = await (db.select(db.setLogs)..where((t) => t.id.equals(id))).getSingle();
+      expect(updated.weightKg, 110.0);
+      expect(updated.reps, 3);
+
+      await repository.deleteSetLog(id);
+      final list = await db.select(db.setLogs).get();
+      expect(list, isEmpty);
     });
   });
 }

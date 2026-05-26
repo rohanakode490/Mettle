@@ -18,42 +18,42 @@ void main() {
   });
 
   group('RoutineRepository', () {
-    test('createRoutine should create a routine and its exercise associations', () async {
-      // 1. Setup: Add exercises
-      final ex1Id = await db.into(db.exercises).insert(
-            ExercisesCompanion.insert(name: 'Bench Press'),
-          );
-      final ex2Id = await db.into(db.exercises).insert(
-            ExercisesCompanion.insert(name: 'Squat'),
-          );
+    test('saveRoutine should create a routine and 7 day plans', () async {
+      final weeklyExercises = {
+        1: [ExercisePlan(id: 'test-id', name: 'Bench Press', targetSets: '3', targetReps: '10')],
+        3: [ExercisePlan(id: 'test-id', name: 'Squat', targetSets: '5', targetReps: '5')],
+      };
 
-      // 2. Action: Create routine
-      final routineId = await repository.createRoutine('Push/Pull', [ex1Id, ex2Id]);
+      await repository.saveRoutine('Push/Pull', weeklyExercises);
 
-      // 3. Assert: Routine exists
-      final routine = await (db.select(db.routines)..where((t) => t.id.equals(routineId))).getSingle();
-      expect(routine.name, 'Push/Pull');
+      final routines = await repository.getAllRoutines();
+      expect(routines.length, 1);
+      expect(routines.first.name, 'Push/Pull');
 
-      // 4. Assert: Exercise associations exist
-      final associations = await (db.select(db.routineExercises)..where((t) => t.routineId.equals(routineId))).get();
-      expect(associations.length, 2);
-      expect(associations[0].exerciseId, ex1Id);
-      expect(associations[0].orderIndex, 0);
-      expect(associations[1].exerciseId, ex2Id);
-      expect(associations[1].orderIndex, 1);
+      final routineWithPlans = await repository.getRoutineWithPlans(routines.first.id);
+      expect(routineWithPlans.plans.length, 7);
+      
+      final mondayPlan = routineWithPlans.plans.firstWhere((p) => p.dayIndex == 1);
+      expect(mondayPlan.isRest, isFalse);
+      expect(mondayPlan.exercisePlans.first.name, 'Bench Press');
+
+      final tuesdayPlan = routineWithPlans.plans.firstWhere((p) => p.dayIndex == 2);
+      expect(tuesdayPlan.isRest, isTrue);
+      expect(tuesdayPlan.exercisePlans, isEmpty);
     });
 
-    test('deleteRoutine should remove the routine and its associations', () async {
-      final exId = await db.into(db.exercises).insert(ExercisesCompanion.insert(name: 'Bench'));
-      final routineId = await repository.createRoutine('Test', [exId]);
+    test('deleteRoutine should remove routine and all its day plans', () async {
+      await repository.saveRoutine('Test', {});
+      final routines = await repository.getAllRoutines();
+      final routineId = routines.first.id;
 
       await repository.deleteRoutine(routineId);
 
-      final routines = await db.select(db.routines).get();
-      final associations = await db.select(db.routineExercises).get();
+      final routinesAfter = await repository.getAllRoutines();
+      expect(routinesAfter, isEmpty);
 
-      expect(routines, isEmpty);
-      expect(associations, isEmpty);
+      final dayPlans = await db.select(db.dayPlans).get();
+      expect(dayPlans, isEmpty);
     });
   });
 }

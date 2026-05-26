@@ -3,30 +3,48 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/database/database_provider.dart';
+import 'core/database/seed_data.dart';
 import 'core/sync/sync_worker.dart';
-import 'features/schedule/presentation/home_screen.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
+import 'features/navigation/presentation/main_navigation_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print("Warning: .env file not found. Supabase may fail to initialize.");
+  }
 
   // Initialize Supabase using env variables
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
-  );
+  try {
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL'] ?? '',
+      anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+    );
+  } catch (e) {
+    print("Error: Failed to initialize Supabase: $e");
+  }
 
-  await SyncWorker.initialize();
-  await SyncWorker.schedulePeriodicSync();
+  try {
+    await SyncWorker.initialize();
+    await SyncWorker.schedulePeriodicSync();
+  } catch (e) {
+    print("Warning: Failed to initialize SyncWorker: $e");
+  }
 
   // Create a container to access providers before runApp
   final container = ProviderContainer();
   
-  // Seed the database with initial exercises
+  // Seed the database with initial routines
+  print("App: Initializing Database...");
   final db = container.read(databaseProvider);
-  await db.seedExercises();
+  print("App: Seeding Data...");
+  await SeedData.seed(db);
+  print("App: Data Seeding Complete.");
 
   runApp(
     UncontrolledProviderScope(
@@ -36,41 +54,20 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp(
-      title: 'Mettle',
+      title: 'Gym Log',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          centerTitle: false,
-        ),
-        cardTheme: CardTheme(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey[200]!),
-          ),
-          color: Colors.white,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        ),
-      ),
-      home: const HomeScreen(),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      home: const MainNavigationScreen(),
     );
   }
 }

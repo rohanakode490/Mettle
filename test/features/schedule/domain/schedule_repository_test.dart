@@ -18,41 +18,28 @@ void main() {
   });
 
   group('ScheduleRepository', () {
-    test('getTodayRoutine should return the routine for today', () async {
-      // 1. Setup: Add a routine
-      final routineId = await db.into(db.routines).insert(
-            RoutinesCompanion.insert(name: 'Leg Day'),
+    test('watchWeeklySchedule should emit joined plans for a routine', () async {
+      final routineId = 'r1';
+      await db.into(db.routines).insert(
+            RoutinesCompanion.insert(id: routineId, name: 'Leg Day'),
           );
 
-      // 2. Setup: Schedule it for today
-      final today = DateTime.now().weekday;
-      await repository.setSchedule(today, routineId);
-
-      // 3. Action: Fetch today's routine
-      final routine = await repository.getTodayRoutine();
-
-      // 4. Assert
-      expect(routine, isNotNull);
-      expect(routine!.name, 'Leg Day');
-      expect(routine.id, routineId);
-    });
-
-    test('watchWeeklySchedule should emit all scheduled routines', () async {
-      final routine1Id = await db.into(db.routines).insert(
-            RoutinesCompanion.insert(name: 'Upper Body'),
-          );
-      final routine2Id = await db.into(db.routines).insert(
-            RoutinesCompanion.insert(name: 'Lower Body'),
+      await db.into(db.dayPlans).insert(
+            DayPlansCompanion.insert(
+              id: 'dp1',
+              routineId: routineId,
+              dayIndex: 1,
+              isRest: const Value(false),
+              exercisePlans: [ExercisePlan(id: 'test-id', name: 'Squat')],
+            ),
           );
 
-      await repository.setSchedule(1, routine1Id); // Monday
-      await repository.setSchedule(3, routine2Id); // Wednesday
+      final schedule = await repository.watchWeeklySchedule(routineId).first;
 
-      final schedule = await repository.watchWeeklySchedule().first;
-
-      expect(schedule.length, 2);
-      expect(schedule.any((s) => s.routine.name == 'Upper Body' && s.schedule.dayOfWeek == 1), isTrue);
-      expect(schedule.any((s) => s.routine.name == 'Lower Body' && s.schedule.dayOfWeek == 3), isTrue);
+      expect(schedule.length, 1);
+      expect(schedule.first.routine.name, 'Leg Day');
+      expect(schedule.first.dayPlan.dayIndex, 1);
+      expect(schedule.first.dayPlan.exercisePlans.first.name, 'Squat');
     });
   });
 }
