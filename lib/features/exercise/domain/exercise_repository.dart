@@ -1,30 +1,21 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:drift/drift.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym_log/core/database/database.dart';
 import 'package:gym_log/core/database/database_provider.dart';
-import 'package:drift/drift.dart';
-
-part 'exercise_repository.g.dart';
 
 class ExerciseRepository {
   final AppDatabase db;
 
   ExerciseRepository(this.db);
 
-  Stream<List<Exercise>> watchExercises() {
+  Stream<List<Exercise>> watchAllExercises() {
     return db.select(db.exercises).watch();
   }
 
-  Future<List<Exercise>> getAllExercises() {
-    return db.select(db.exercises).get();
-  }
-
-  Future<List<Exercise>> getExercisesByMuscleGroup(String muscleGroup) {
-    return (db.select(db.exercises)..where((t) => t.muscleGroup.equals(muscleGroup))).get();
-  }
-
-  Future<int> addExercise(String name, String? muscleGroup) {
-    return db.into(db.exercises).insert(
+  Future<void> addExercise(String name, String? muscleGroup) async {
+    await db.into(db.exercises).insert(
       ExercisesCompanion.insert(
+        id: DateTime.now().toIso8601String(),
         name: name,
         muscleGroup: Value(muscleGroup),
       ),
@@ -32,12 +23,10 @@ class ExerciseRepository {
   }
 }
 
-@riverpod
-ExerciseRepository exerciseRepository(Ref ref) {
+final exerciseRepositoryProvider = Provider<ExerciseRepository>((ref) {
   return ExerciseRepository(ref.watch(databaseProvider));
-}
+});
 
-@riverpod
-Stream<List<Exercise>> exercisesStream(Ref ref) {
-  return ref.watch(exerciseRepositoryProvider).watchExercises();
-}
+final exercisesStreamProvider = StreamProvider<List<Exercise>>((ref) {
+  return ref.watch(exerciseRepositoryProvider).watchAllExercises();
+});

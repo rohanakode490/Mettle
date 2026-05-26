@@ -17,19 +17,19 @@ class AnalyticsRepository {
 
   AnalyticsRepository(this.db);
 
-  Future<List<ExerciseProgressPoint>> getExerciseProgress(int exerciseId) async {
+  Future<List<ExerciseProgressPoint>> getExerciseProgress(String exerciseName) async {
     // Query max weight per day for a specific exercise
     final query = db.selectOnly(db.setLogs)
-      ..addColumns([db.setLogs.createdAt, db.setLogs.weight.max()])
-      ..where(db.setLogs.exerciseId.equals(exerciseId))
-      ..groupBy([db.setLogs.createdAt.date]);
+      ..addColumns([db.setLogs.timestamp, db.setLogs.weightKg.max()])
+      ..where(db.setLogs.exerciseName.equals(exerciseName))
+      ..groupBy([db.setLogs.timestamp.date]);
 
     final rows = await query.get();
     
     return rows.map((row) {
       return ExerciseProgressPoint(
-        date: row.read(db.setLogs.createdAt)!,
-        maxWeight: row.read(db.setLogs.weight.max()) ?? 0,
+        date: row.read(db.setLogs.timestamp)!,
+        maxWeight: row.read(db.setLogs.weightKg.max()) ?? 0,
       );
     }).toList()
       ..sort((a, b) => a.date.compareTo(b.date));

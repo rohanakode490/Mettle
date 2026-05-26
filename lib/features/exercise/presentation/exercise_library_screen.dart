@@ -3,10 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym_log/core/database/database.dart';
 import '../domain/exercise_repository.dart';
 
-final exerciseSearchQueryProvider = StateProvider<String>((ref) => '');
-final selectedMuscleGroupProvider = StateProvider<String?>((ref) => null);
+// Using simple Notifiers since StateProvider is unavailable or restricted in this project's version
+class SearchQueryNotifier extends AutoDisposeNotifier<String> {
+  @override
+  String build() => '';
+  void update(String query) => state = query;
+}
 
-final filteredExercisesProvider = Provider<AsyncValue<List<Exercise>>>((ref) {
+final exerciseSearchQueryProvider = NotifierProvider.autoDispose<SearchQueryNotifier, String>(SearchQueryNotifier.new);
+
+class MuscleGroupNotifier extends AutoDisposeNotifier<String?> {
+  @override
+  String? build() => null;
+  void set(String? group) => state = group;
+}
+
+final selectedMuscleGroupProvider = NotifierProvider.autoDispose<MuscleGroupNotifier, String?>(MuscleGroupNotifier.new);
+
+final filteredExercisesProvider = Provider.autoDispose<AsyncValue<List<Exercise>>>((ref) {
   final exercisesAsync = ref.watch(exercisesStreamProvider);
   final searchQuery = ref.watch(exerciseSearchQueryProvider).toLowerCase();
   final selectedMuscleGroup = ref.watch(selectedMuscleGroupProvider);
@@ -59,29 +73,29 @@ class ExerciseLibraryScreen extends ConsumerWidget {
                         label: const Text('All'),
                         selected: selectedMuscleGroup == null,
                         onSelected: (_) {
-                          ref.read(selectedMuscleGroupProvider.notifier).state = null;
+                          ref.read(selectedMuscleGroupProvider.notifier).set(null);
                         },
                         backgroundColor: Colors.grey[100],
                         selectedColor: Colors.blue[50],
                         checkmarkColor: Colors.blue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[200]!),
                         ),
+                        side: BorderSide(color: Colors.grey[200]!),
                       ),
                       ...muscleGroups.map((group) => FilterChip(
                         label: Text(group),
                         selected: selectedMuscleGroup == group,
                         onSelected: (selected) {
-                          ref.read(selectedMuscleGroupProvider.notifier).state = selected ? group : null;
+                          ref.read(selectedMuscleGroupProvider.notifier).set(selected ? group : null);
                         },
                         backgroundColor: Colors.grey[100],
                         selectedColor: Colors.blue[50],
                         checkmarkColor: Colors.blue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[200]!),
                         ),
+                        side: BorderSide(color: Colors.grey[200]!),
                       )),
                     ],
                   ),
@@ -143,7 +157,7 @@ class ExerciseLibraryScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: TextField(
-                      onChanged: (value) => ref.read(exerciseSearchQueryProvider.notifier).state = value,
+                      onChanged: (value) => ref.read(exerciseSearchQueryProvider.notifier).update(value),
                       decoration: const InputDecoration(
                         hintText: 'What movement today?',
                         prefixIcon: Icon(Icons.search, color: Colors.grey, size: 20),
