@@ -3,96 +3,126 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'dart:io';
+import 'dart:convert';
+import 'package:uuid/uuid.dart';
 
 part 'database.g.dart';
 
-@DataClassName('Exercise')
-class Exercises extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text().withLength(min: 1, max: 100)();
-  TextColumn get muscleGroup => text().nullable()();
-  TextColumn get remoteId => text().nullable()();
+class ExercisePlan {
+  final String id;
+  final String name;
+  final String? targetSets;
+  final String? targetReps;
+
+  ExercisePlan({required this.id, required this.name, this.targetSets, this.targetReps});
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'targetSets': targetSets,
+    'targetReps': targetReps,
+  };
+
+  factory ExercisePlan.fromJson(Map<String, dynamic> json) => ExercisePlan(
+    id: json['id'] as String? ?? const Uuid().v4(),
+    name: json['name'] as String,
+    targetSets: json['targetSets'] as String?,
+    targetReps: json['targetReps'] as String?,
+  );
 }
 
 @DataClassName('Routine')
 class Routines extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  TextColumn get id => text()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get remoteId => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  SetColumn get primaryKey => {id};
 }
 
-@DataClassName('RoutineExercise')
-class RoutineExercises extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get routineId => integer().references(Routines, #id)();
-  IntColumn get exerciseId => integer().references(Exercises, #id)();
-  IntColumn get orderIndex => integer()();
+@DataClassName('DayPlan')
+class DayPlans extends Table {
+  TextColumn get id => text()();
+  TextColumn get routineId => text().references(Routines, #id)();
+  IntColumn get dayIndex => integer()(); // 0-6
+  BoolColumn get isRest => boolean().withDefault(const Constant(true))();
+  TextColumn get exercisePlans => text().map(const ExercisePlanListConverter())();
   TextColumn get remoteId => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
-}
 
-@DataClassName('Schedule')
-class Schedules extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get routineId => integer().references(Routines, #id)();
-  IntColumn get dayOfWeek => integer().unique()(); // 1-7 (Monday-Sunday)
-  TextColumn get remoteId => text().nullable()();
-  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
-}
-
-@DataClassName('WorkoutSession')
-class WorkoutSessions extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get routineId => integer().references(Routines, #id).nullable()();
-  DateTimeColumn get startTime => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get endTime => dateTime().nullable()();
-  TextColumn get note => text().nullable()();
-  TextColumn get remoteId => text().nullable()();
-  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
+  @override
+  SetColumn get primaryKey => {id};
 }
 
 @DataClassName('SetLog')
 class SetLogs extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get workoutSessionId => integer().references(WorkoutSessions, #id)();
-  IntColumn get exerciseId => integer().references(Exercises, #id)();
-  RealColumn get weight => real()();
+  TextColumn get id => text()();
+  TextColumn get exerciseName => text()();
+  RealColumn get weightKg => real()();
   IntColumn get reps => integer()();
-  IntColumn get orderIndex => integer()();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get routineId => text()();
+  IntColumn get dayIndex => integer()();
   TextColumn get remoteId => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get setType => text().withDefault(const Constant('work'))(); // 'warmup' or 'work'
+
+  @override
+  SetColumn get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Exercises, Routines, RoutineExercises, Schedules, WorkoutSessions, SetLogs])
+@DataClassName('Exercise')
+class Exercises extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text().withLength(min: 1, max: 100)();
+  TextColumn get muscleGroup => text().nullable()(); // Chest, Back, Legs, etc.
+  TextColumn get remoteId => text().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+
+  @override
+  SetColumn get primaryKey => {id};
+}
+
+class ExercisePlanListConverter extends TypeConverter<List<ExercisePlan>, String> {
+  const ExercisePlanListConverter();
+
+  @override
+  List<ExercisePlan> fromSql(String fromDb) {
+    return (json.decode(fromDb) as List).map((i) => ExercisePlan.fromJson(i as Map<String, dynamic>)).toList();
+  }
+
+  @override
+  String toSql(List<ExercisePlan> value) {
+    return json.encode(value.map((i) => i.toJson()).toList());
+  }
+}
+
+@DriftDatabase(tables: [Routines, DayPlans, SetLogs, Exercises])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(QueryExecutor super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 7;
 
-  Future<void> seedExercises() async {
-    final count = await select(exercises).get().then((value) => value.length);
-    if (count == 0) {
-      await batch((batch) {
-        batch.insertAll(exercises, [
-          ExercisesCompanion.insert(name: 'Bench Press', muscleGroup: const Value('Chest')),
-          ExercisesCompanion.insert(name: 'Squat', muscleGroup: const Value('Legs')),
-          ExercisesCompanion.insert(name: 'Deadlift', muscleGroup: const Value('Back')),
-          ExercisesCompanion.insert(name: 'Overhead Press', muscleGroup: const Value('Shoulders')),
-          ExercisesCompanion.insert(name: 'Pull Up', muscleGroup: const Value('Back')),
-          ExercisesCompanion.insert(name: 'Barbell Row', muscleGroup: const Value('Back')),
-        ]);
-      });
-    }
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (m) async {
+        await m.createAll();
+      },
+      onUpgrade: (m, from, to) async {
+        if (from < 7) {
+          for (final table in allTables) {
+            await m.drop(table);
+          }
+          await m.createAll();
+        }
+      },
+    );
   }
 }
 
