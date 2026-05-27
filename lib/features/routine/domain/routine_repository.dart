@@ -28,10 +28,13 @@ class RoutineRepository {
   Future<void> saveRoutine(String name, Map<int, List<ExercisePlan>> weeklyExercises) async {
     await db.transaction(() async {
       final routineId = _uuid.v4();
+      final now = DateTime.now();
       await db.into(db.routines).insert(
             RoutinesCompanion.insert(
               id: routineId,
               name: name,
+              lastModified: Value(now),
+              isSynced: const Value(false),
             ),
           );
 
@@ -44,6 +47,8 @@ class RoutineRepository {
                 dayIndex: i,
                 isRest: Value(exercises.isEmpty),
                 exercisePlans: exercises,
+                lastModified: Value(now),
+                isSynced: const Value(false),
               ),
             );
       }
@@ -52,8 +57,13 @@ class RoutineRepository {
 
   Future<void> updateRoutine(String id, String name, Map<int, List<ExercisePlan>> weeklyExercises) async {
     await db.transaction(() async {
+      final now = DateTime.now();
       await (db.update(db.routines)..where((t) => t.id.equals(id))).write(
-        RoutinesCompanion(name: Value(name)),
+        RoutinesCompanion(
+          name: Value(name),
+          lastModified: Value(now),
+          isSynced: const Value(false),
+        ),
       );
 
       for (int i = 0; i < 7; i++) {
@@ -64,6 +74,8 @@ class RoutineRepository {
           DayPlansCompanion(
             isRest: Value(exercises.isEmpty),
             exercisePlans: Value(exercises),
+            lastModified: Value(now),
+            isSynced: const Value(false),
           ),
         );
       }

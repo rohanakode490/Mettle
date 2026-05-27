@@ -18,6 +18,7 @@ class WorkoutRepository {
     required int dayIndex,
     String setType = 'work',
   }) async {
+    final now = DateTime.now();
     await db.into(db.setLogs).insert(
           SetLogsCompanion.insert(
             id: _uuid.v4(),
@@ -26,8 +27,10 @@ class WorkoutRepository {
             reps: reps,
             routineId: routineId,
             dayIndex: dayIndex,
-            timestamp: Value(DateTime.now()),
+            timestamp: Value(now),
             setType: Value(setType),
+            lastModified: Value(now),
+            isSynced: const Value(false),
           ),
         );
   }
@@ -97,11 +100,14 @@ class WorkoutRepository {
     required int reps,
     required String setType,
   }) async {
+    final now = DateTime.now();
     await (db.update(db.setLogs)..where((t) => t.id.equals(id))).write(
       SetLogsCompanion(
         weightKg: Value(weight),
         reps: Value(reps),
         setType: Value(setType),
+        lastModified: Value(now),
+        isSynced: const Value(false),
       ),
     );
   }

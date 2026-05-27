@@ -28,5 +28,5 @@
 
 ## NEXT STEPS
 - [ ] Implement volume charts and 1RM estimation in Progress screen.
-- [ ] Implement "Pull" sync logic for new device login.
+- [x] Implement "Pull" sync logic for new device login.
 - [ ] Add haptic feedback for set logging and day completion.

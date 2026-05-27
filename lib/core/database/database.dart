@@ -38,9 +38,10 @@ class Routines extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get remoteId => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
 
   @override
-  SetColumn get primaryKey => {id};
+  Set<Column> get primaryKey => {id};
 }
 
 @DataClassName('DayPlan')
@@ -52,9 +53,10 @@ class DayPlans extends Table {
   TextColumn get exercisePlans => text().map(const ExercisePlanListConverter())();
   TextColumn get remoteId => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
 
   @override
-  SetColumn get primaryKey => {id};
+  Set<Column> get primaryKey => {id};
 }
 
 @DataClassName('SetLog')
@@ -68,10 +70,11 @@ class SetLogs extends Table {
   IntColumn get dayIndex => integer()();
   TextColumn get remoteId => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
   TextColumn get setType => text().withDefault(const Constant('work'))(); // 'warmup' or 'work'
 
   @override
-  SetColumn get primaryKey => {id};
+  Set<Column> get primaryKey => {id};
 }
 
 @DataClassName('Exercise')
@@ -81,9 +84,10 @@ class Exercises extends Table {
   TextColumn get muscleGroup => text().nullable()(); // Chest, Back, Legs, etc.
   TextColumn get remoteId => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastModified => dateTime().withDefault(currentDateAndTime)();
 
   @override
-  SetColumn get primaryKey => {id};
+  Set<Column> get primaryKey => {id};
 }
 
 class ExercisePlanListConverter extends TypeConverter<List<ExercisePlan>, String> {
@@ -106,7 +110,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -115,7 +119,7 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (m, from, to) async {
-        if (from < 7) {
+        if (from < 8) {
           for (final table in allTables) {
             await m.drop(table);
           }

@@ -68,6 +68,18 @@ class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -75,6 +87,7 @@ class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
     createdAt,
     remoteId,
     isSynced,
+    lastModified,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -119,6 +132,15 @@ class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
       );
     }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -148,6 +170,10 @@ class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
       )!,
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
     );
   }
 
@@ -163,12 +189,14 @@ class Routine extends DataClass implements Insertable<Routine> {
   final DateTime createdAt;
   final String? remoteId;
   final bool isSynced;
+  final DateTime lastModified;
   const Routine({
     required this.id,
     required this.name,
     required this.createdAt,
     this.remoteId,
     required this.isSynced,
+    required this.lastModified,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -180,6 +208,7 @@ class Routine extends DataClass implements Insertable<Routine> {
       map['remote_id'] = Variable<String>(remoteId);
     }
     map['is_synced'] = Variable<bool>(isSynced);
+    map['last_modified'] = Variable<DateTime>(lastModified);
     return map;
   }
 
@@ -192,6 +221,7 @@ class Routine extends DataClass implements Insertable<Routine> {
           ? const Value.absent()
           : Value(remoteId),
       isSynced: Value(isSynced),
+      lastModified: Value(lastModified),
     );
   }
 
@@ -206,6 +236,7 @@ class Routine extends DataClass implements Insertable<Routine> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       remoteId: serializer.fromJson<String?>(json['remoteId']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      lastModified: serializer.fromJson<DateTime>(json['lastModified']),
     );
   }
   @override
@@ -217,6 +248,7 @@ class Routine extends DataClass implements Insertable<Routine> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'remoteId': serializer.toJson<String?>(remoteId),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'lastModified': serializer.toJson<DateTime>(lastModified),
     };
   }
 
@@ -226,12 +258,14 @@ class Routine extends DataClass implements Insertable<Routine> {
     DateTime? createdAt,
     Value<String?> remoteId = const Value.absent(),
     bool? isSynced,
+    DateTime? lastModified,
   }) => Routine(
     id: id ?? this.id,
     name: name ?? this.name,
     createdAt: createdAt ?? this.createdAt,
     remoteId: remoteId.present ? remoteId.value : this.remoteId,
     isSynced: isSynced ?? this.isSynced,
+    lastModified: lastModified ?? this.lastModified,
   );
   Routine copyWithCompanion(RoutinesCompanion data) {
     return Routine(
@@ -240,6 +274,9 @@ class Routine extends DataClass implements Insertable<Routine> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
     );
   }
 
@@ -250,13 +287,15 @@ class Routine extends DataClass implements Insertable<Routine> {
           ..write('name: $name, ')
           ..write('createdAt: $createdAt, ')
           ..write('remoteId: $remoteId, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('lastModified: $lastModified')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, createdAt, remoteId, isSynced);
+  int get hashCode =>
+      Object.hash(id, name, createdAt, remoteId, isSynced, lastModified);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -265,7 +304,8 @@ class Routine extends DataClass implements Insertable<Routine> {
           other.name == this.name &&
           other.createdAt == this.createdAt &&
           other.remoteId == this.remoteId &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.lastModified == this.lastModified);
 }
 
 class RoutinesCompanion extends UpdateCompanion<Routine> {
@@ -274,6 +314,7 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
   final Value<DateTime> createdAt;
   final Value<String?> remoteId;
   final Value<bool> isSynced;
+  final Value<DateTime> lastModified;
   final Value<int> rowid;
   const RoutinesCompanion({
     this.id = const Value.absent(),
@@ -281,6 +322,7 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
     this.createdAt = const Value.absent(),
     this.remoteId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.lastModified = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   RoutinesCompanion.insert({
@@ -289,6 +331,7 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
     this.createdAt = const Value.absent(),
     this.remoteId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.lastModified = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -298,6 +341,7 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
     Expression<DateTime>? createdAt,
     Expression<String>? remoteId,
     Expression<bool>? isSynced,
+    Expression<DateTime>? lastModified,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -306,6 +350,7 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
       if (createdAt != null) 'created_at': createdAt,
       if (remoteId != null) 'remote_id': remoteId,
       if (isSynced != null) 'is_synced': isSynced,
+      if (lastModified != null) 'last_modified': lastModified,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -316,6 +361,7 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
     Value<DateTime>? createdAt,
     Value<String?>? remoteId,
     Value<bool>? isSynced,
+    Value<DateTime>? lastModified,
     Value<int>? rowid,
   }) {
     return RoutinesCompanion(
@@ -324,6 +370,7 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
       createdAt: createdAt ?? this.createdAt,
       remoteId: remoteId ?? this.remoteId,
       isSynced: isSynced ?? this.isSynced,
+      lastModified: lastModified ?? this.lastModified,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -346,6 +393,9 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<DateTime>(lastModified.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -360,6 +410,7 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
           ..write('createdAt: $createdAt, ')
           ..write('remoteId: $remoteId, ')
           ..write('isSynced: $isSynced, ')
+          ..write('lastModified: $lastModified, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -453,6 +504,18 @@ class $DayPlansTable extends DayPlans with TableInfo<$DayPlansTable, DayPlan> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -462,6 +525,7 @@ class $DayPlansTable extends DayPlans with TableInfo<$DayPlansTable, DayPlan> {
     exercisePlans,
     remoteId,
     isSynced,
+    lastModified,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -514,6 +578,15 @@ class $DayPlansTable extends DayPlans with TableInfo<$DayPlansTable, DayPlan> {
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
       );
     }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -553,6 +626,10 @@ class $DayPlansTable extends DayPlans with TableInfo<$DayPlansTable, DayPlan> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
       )!,
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
     );
   }
 
@@ -573,6 +650,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
   final List<ExercisePlan> exercisePlans;
   final String? remoteId;
   final bool isSynced;
+  final DateTime lastModified;
   const DayPlan({
     required this.id,
     required this.routineId,
@@ -581,6 +659,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
     required this.exercisePlans,
     this.remoteId,
     required this.isSynced,
+    required this.lastModified,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -598,6 +677,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
       map['remote_id'] = Variable<String>(remoteId);
     }
     map['is_synced'] = Variable<bool>(isSynced);
+    map['last_modified'] = Variable<DateTime>(lastModified);
     return map;
   }
 
@@ -612,6 +692,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
           ? const Value.absent()
           : Value(remoteId),
       isSynced: Value(isSynced),
+      lastModified: Value(lastModified),
     );
   }
 
@@ -630,6 +711,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
       ),
       remoteId: serializer.fromJson<String?>(json['remoteId']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      lastModified: serializer.fromJson<DateTime>(json['lastModified']),
     );
   }
   @override
@@ -643,6 +725,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
       'exercisePlans': serializer.toJson<List<ExercisePlan>>(exercisePlans),
       'remoteId': serializer.toJson<String?>(remoteId),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'lastModified': serializer.toJson<DateTime>(lastModified),
     };
   }
 
@@ -654,6 +737,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
     List<ExercisePlan>? exercisePlans,
     Value<String?> remoteId = const Value.absent(),
     bool? isSynced,
+    DateTime? lastModified,
   }) => DayPlan(
     id: id ?? this.id,
     routineId: routineId ?? this.routineId,
@@ -662,6 +746,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
     exercisePlans: exercisePlans ?? this.exercisePlans,
     remoteId: remoteId.present ? remoteId.value : this.remoteId,
     isSynced: isSynced ?? this.isSynced,
+    lastModified: lastModified ?? this.lastModified,
   );
   DayPlan copyWithCompanion(DayPlansCompanion data) {
     return DayPlan(
@@ -674,6 +759,9 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
           : this.exercisePlans,
       remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
     );
   }
 
@@ -686,7 +774,8 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
           ..write('isRest: $isRest, ')
           ..write('exercisePlans: $exercisePlans, ')
           ..write('remoteId: $remoteId, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('lastModified: $lastModified')
           ..write(')'))
         .toString();
   }
@@ -700,6 +789,7 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
     exercisePlans,
     remoteId,
     isSynced,
+    lastModified,
   );
   @override
   bool operator ==(Object other) =>
@@ -711,7 +801,8 @@ class DayPlan extends DataClass implements Insertable<DayPlan> {
           other.isRest == this.isRest &&
           other.exercisePlans == this.exercisePlans &&
           other.remoteId == this.remoteId &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.lastModified == this.lastModified);
 }
 
 class DayPlansCompanion extends UpdateCompanion<DayPlan> {
@@ -722,6 +813,7 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
   final Value<List<ExercisePlan>> exercisePlans;
   final Value<String?> remoteId;
   final Value<bool> isSynced;
+  final Value<DateTime> lastModified;
   final Value<int> rowid;
   const DayPlansCompanion({
     this.id = const Value.absent(),
@@ -731,6 +823,7 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
     this.exercisePlans = const Value.absent(),
     this.remoteId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.lastModified = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DayPlansCompanion.insert({
@@ -741,6 +834,7 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
     required List<ExercisePlan> exercisePlans,
     this.remoteId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.lastModified = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        routineId = Value(routineId),
@@ -754,6 +848,7 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
     Expression<String>? exercisePlans,
     Expression<String>? remoteId,
     Expression<bool>? isSynced,
+    Expression<DateTime>? lastModified,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -764,6 +859,7 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
       if (exercisePlans != null) 'exercise_plans': exercisePlans,
       if (remoteId != null) 'remote_id': remoteId,
       if (isSynced != null) 'is_synced': isSynced,
+      if (lastModified != null) 'last_modified': lastModified,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -776,6 +872,7 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
     Value<List<ExercisePlan>>? exercisePlans,
     Value<String?>? remoteId,
     Value<bool>? isSynced,
+    Value<DateTime>? lastModified,
     Value<int>? rowid,
   }) {
     return DayPlansCompanion(
@@ -786,6 +883,7 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
       exercisePlans: exercisePlans ?? this.exercisePlans,
       remoteId: remoteId ?? this.remoteId,
       isSynced: isSynced ?? this.isSynced,
+      lastModified: lastModified ?? this.lastModified,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -816,6 +914,9 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<DateTime>(lastModified.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -832,6 +933,7 @@ class DayPlansCompanion extends UpdateCompanion<DayPlan> {
           ..write('exercisePlans: $exercisePlans, ')
           ..write('remoteId: $remoteId, ')
           ..write('isSynced: $isSynced, ')
+          ..write('lastModified: $lastModified, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -943,6 +1045,18 @@ class $SetLogsTable extends SetLogs with TableInfo<$SetLogsTable, SetLog> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   static const VerificationMeta _setTypeMeta = const VerificationMeta(
     'setType',
   );
@@ -966,6 +1080,7 @@ class $SetLogsTable extends SetLogs with TableInfo<$SetLogsTable, SetLog> {
     dayIndex,
     remoteId,
     isSynced,
+    lastModified,
     setType,
   ];
   @override
@@ -1046,6 +1161,15 @@ class $SetLogsTable extends SetLogs with TableInfo<$SetLogsTable, SetLog> {
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
       );
     }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    }
     if (data.containsKey('set_type')) {
       context.handle(
         _setTypeMeta,
@@ -1097,6 +1221,10 @@ class $SetLogsTable extends SetLogs with TableInfo<$SetLogsTable, SetLog> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
       )!,
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
       setType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}set_type'],
@@ -1120,6 +1248,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
   final int dayIndex;
   final String? remoteId;
   final bool isSynced;
+  final DateTime lastModified;
   final String setType;
   const SetLog({
     required this.id,
@@ -1131,6 +1260,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
     required this.dayIndex,
     this.remoteId,
     required this.isSynced,
+    required this.lastModified,
     required this.setType,
   });
   @override
@@ -1147,6 +1277,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
       map['remote_id'] = Variable<String>(remoteId);
     }
     map['is_synced'] = Variable<bool>(isSynced);
+    map['last_modified'] = Variable<DateTime>(lastModified);
     map['set_type'] = Variable<String>(setType);
     return map;
   }
@@ -1164,6 +1295,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
           ? const Value.absent()
           : Value(remoteId),
       isSynced: Value(isSynced),
+      lastModified: Value(lastModified),
       setType: Value(setType),
     );
   }
@@ -1183,6 +1315,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
       dayIndex: serializer.fromJson<int>(json['dayIndex']),
       remoteId: serializer.fromJson<String?>(json['remoteId']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      lastModified: serializer.fromJson<DateTime>(json['lastModified']),
       setType: serializer.fromJson<String>(json['setType']),
     );
   }
@@ -1199,6 +1332,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
       'dayIndex': serializer.toJson<int>(dayIndex),
       'remoteId': serializer.toJson<String?>(remoteId),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'lastModified': serializer.toJson<DateTime>(lastModified),
       'setType': serializer.toJson<String>(setType),
     };
   }
@@ -1213,6 +1347,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
     int? dayIndex,
     Value<String?> remoteId = const Value.absent(),
     bool? isSynced,
+    DateTime? lastModified,
     String? setType,
   }) => SetLog(
     id: id ?? this.id,
@@ -1224,6 +1359,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
     dayIndex: dayIndex ?? this.dayIndex,
     remoteId: remoteId.present ? remoteId.value : this.remoteId,
     isSynced: isSynced ?? this.isSynced,
+    lastModified: lastModified ?? this.lastModified,
     setType: setType ?? this.setType,
   );
   SetLog copyWithCompanion(SetLogsCompanion data) {
@@ -1239,6 +1375,9 @@ class SetLog extends DataClass implements Insertable<SetLog> {
       dayIndex: data.dayIndex.present ? data.dayIndex.value : this.dayIndex,
       remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
       setType: data.setType.present ? data.setType.value : this.setType,
     );
   }
@@ -1255,6 +1394,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
           ..write('dayIndex: $dayIndex, ')
           ..write('remoteId: $remoteId, ')
           ..write('isSynced: $isSynced, ')
+          ..write('lastModified: $lastModified, ')
           ..write('setType: $setType')
           ..write(')'))
         .toString();
@@ -1271,6 +1411,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
     dayIndex,
     remoteId,
     isSynced,
+    lastModified,
     setType,
   );
   @override
@@ -1286,6 +1427,7 @@ class SetLog extends DataClass implements Insertable<SetLog> {
           other.dayIndex == this.dayIndex &&
           other.remoteId == this.remoteId &&
           other.isSynced == this.isSynced &&
+          other.lastModified == this.lastModified &&
           other.setType == this.setType);
 }
 
@@ -1299,6 +1441,7 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
   final Value<int> dayIndex;
   final Value<String?> remoteId;
   final Value<bool> isSynced;
+  final Value<DateTime> lastModified;
   final Value<String> setType;
   final Value<int> rowid;
   const SetLogsCompanion({
@@ -1311,6 +1454,7 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
     this.dayIndex = const Value.absent(),
     this.remoteId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.lastModified = const Value.absent(),
     this.setType = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1324,6 +1468,7 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
     required int dayIndex,
     this.remoteId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.lastModified = const Value.absent(),
     this.setType = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1342,6 +1487,7 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
     Expression<int>? dayIndex,
     Expression<String>? remoteId,
     Expression<bool>? isSynced,
+    Expression<DateTime>? lastModified,
     Expression<String>? setType,
     Expression<int>? rowid,
   }) {
@@ -1355,6 +1501,7 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
       if (dayIndex != null) 'day_index': dayIndex,
       if (remoteId != null) 'remote_id': remoteId,
       if (isSynced != null) 'is_synced': isSynced,
+      if (lastModified != null) 'last_modified': lastModified,
       if (setType != null) 'set_type': setType,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1370,6 +1517,7 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
     Value<int>? dayIndex,
     Value<String?>? remoteId,
     Value<bool>? isSynced,
+    Value<DateTime>? lastModified,
     Value<String>? setType,
     Value<int>? rowid,
   }) {
@@ -1383,6 +1531,7 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
       dayIndex: dayIndex ?? this.dayIndex,
       remoteId: remoteId ?? this.remoteId,
       isSynced: isSynced ?? this.isSynced,
+      lastModified: lastModified ?? this.lastModified,
       setType: setType ?? this.setType,
       rowid: rowid ?? this.rowid,
     );
@@ -1418,6 +1567,9 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<DateTime>(lastModified.value);
+    }
     if (setType.present) {
       map['set_type'] = Variable<String>(setType.value);
     }
@@ -1439,6 +1591,7 @@ class SetLogsCompanion extends UpdateCompanion<SetLog> {
           ..write('dayIndex: $dayIndex, ')
           ..write('remoteId: $remoteId, ')
           ..write('isSynced: $isSynced, ')
+          ..write('lastModified: $lastModified, ')
           ..write('setType: $setType, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1511,6 +1664,18 @@ class $ExercisesTable extends Exercises
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1518,6 +1683,7 @@ class $ExercisesTable extends Exercises
     muscleGroup,
     remoteId,
     isSynced,
+    lastModified,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1565,6 +1731,15 @@ class $ExercisesTable extends Exercises
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
       );
     }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1594,6 +1769,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
       )!,
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
     );
   }
 
@@ -1609,12 +1788,14 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final String? muscleGroup;
   final String? remoteId;
   final bool isSynced;
+  final DateTime lastModified;
   const Exercise({
     required this.id,
     required this.name,
     this.muscleGroup,
     this.remoteId,
     required this.isSynced,
+    required this.lastModified,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1628,6 +1809,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       map['remote_id'] = Variable<String>(remoteId);
     }
     map['is_synced'] = Variable<bool>(isSynced);
+    map['last_modified'] = Variable<DateTime>(lastModified);
     return map;
   }
 
@@ -1642,6 +1824,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ? const Value.absent()
           : Value(remoteId),
       isSynced: Value(isSynced),
+      lastModified: Value(lastModified),
     );
   }
 
@@ -1656,6 +1839,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       muscleGroup: serializer.fromJson<String?>(json['muscleGroup']),
       remoteId: serializer.fromJson<String?>(json['remoteId']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      lastModified: serializer.fromJson<DateTime>(json['lastModified']),
     );
   }
   @override
@@ -1667,6 +1851,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'muscleGroup': serializer.toJson<String?>(muscleGroup),
       'remoteId': serializer.toJson<String?>(remoteId),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'lastModified': serializer.toJson<DateTime>(lastModified),
     };
   }
 
@@ -1676,12 +1861,14 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     Value<String?> muscleGroup = const Value.absent(),
     Value<String?> remoteId = const Value.absent(),
     bool? isSynced,
+    DateTime? lastModified,
   }) => Exercise(
     id: id ?? this.id,
     name: name ?? this.name,
     muscleGroup: muscleGroup.present ? muscleGroup.value : this.muscleGroup,
     remoteId: remoteId.present ? remoteId.value : this.remoteId,
     isSynced: isSynced ?? this.isSynced,
+    lastModified: lastModified ?? this.lastModified,
   );
   Exercise copyWithCompanion(ExercisesCompanion data) {
     return Exercise(
@@ -1692,6 +1879,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           : this.muscleGroup,
       remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
     );
   }
 
@@ -1702,13 +1892,15 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('name: $name, ')
           ..write('muscleGroup: $muscleGroup, ')
           ..write('remoteId: $remoteId, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('lastModified: $lastModified')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, muscleGroup, remoteId, isSynced);
+  int get hashCode =>
+      Object.hash(id, name, muscleGroup, remoteId, isSynced, lastModified);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1717,7 +1909,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.name == this.name &&
           other.muscleGroup == this.muscleGroup &&
           other.remoteId == this.remoteId &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.lastModified == this.lastModified);
 }
 
 class ExercisesCompanion extends UpdateCompanion<Exercise> {
@@ -1726,6 +1919,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<String?> muscleGroup;
   final Value<String?> remoteId;
   final Value<bool> isSynced;
+  final Value<DateTime> lastModified;
   final Value<int> rowid;
   const ExercisesCompanion({
     this.id = const Value.absent(),
@@ -1733,6 +1927,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.muscleGroup = const Value.absent(),
     this.remoteId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.lastModified = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExercisesCompanion.insert({
@@ -1741,6 +1936,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.muscleGroup = const Value.absent(),
     this.remoteId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.lastModified = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -1750,6 +1946,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<String>? muscleGroup,
     Expression<String>? remoteId,
     Expression<bool>? isSynced,
+    Expression<DateTime>? lastModified,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1758,6 +1955,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (muscleGroup != null) 'muscle_group': muscleGroup,
       if (remoteId != null) 'remote_id': remoteId,
       if (isSynced != null) 'is_synced': isSynced,
+      if (lastModified != null) 'last_modified': lastModified,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1768,6 +1966,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<String?>? muscleGroup,
     Value<String?>? remoteId,
     Value<bool>? isSynced,
+    Value<DateTime>? lastModified,
     Value<int>? rowid,
   }) {
     return ExercisesCompanion(
@@ -1776,6 +1975,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       muscleGroup: muscleGroup ?? this.muscleGroup,
       remoteId: remoteId ?? this.remoteId,
       isSynced: isSynced ?? this.isSynced,
+      lastModified: lastModified ?? this.lastModified,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1798,6 +1998,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<DateTime>(lastModified.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1812,6 +2015,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('muscleGroup: $muscleGroup, ')
           ..write('remoteId: $remoteId, ')
           ..write('isSynced: $isSynced, ')
+          ..write('lastModified: $lastModified, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1844,6 +2048,7 @@ typedef $$RoutinesTableCreateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<String?> remoteId,
       Value<bool> isSynced,
+      Value<DateTime> lastModified,
       Value<int> rowid,
     });
 typedef $$RoutinesTableUpdateCompanionBuilder =
@@ -1853,6 +2058,7 @@ typedef $$RoutinesTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<String?> remoteId,
       Value<bool> isSynced,
+      Value<DateTime> lastModified,
       Value<int> rowid,
     });
 
@@ -1911,6 +2117,11 @@ class $$RoutinesTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1973,6 +2184,11 @@ class $$RoutinesTableOrderingComposer
     column: $table.isSynced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$RoutinesTableAnnotationComposer
@@ -1998,6 +2214,11 @@ class $$RoutinesTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
 
   Expression<T> dayPlansRefs<T extends Object>(
     Expression<T> Function($$DayPlansTableAnnotationComposer a) f,
@@ -2058,6 +2279,7 @@ class $$RoutinesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RoutinesCompanion(
                 id: id,
@@ -2065,6 +2287,7 @@ class $$RoutinesTableTableManager
                 createdAt: createdAt,
                 remoteId: remoteId,
                 isSynced: isSynced,
+                lastModified: lastModified,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2074,6 +2297,7 @@ class $$RoutinesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RoutinesCompanion.insert(
                 id: id,
@@ -2081,6 +2305,7 @@ class $$RoutinesTableTableManager
                 createdAt: createdAt,
                 remoteId: remoteId,
                 isSynced: isSynced,
+                lastModified: lastModified,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2140,6 +2365,7 @@ typedef $$DayPlansTableCreateCompanionBuilder =
       required List<ExercisePlan> exercisePlans,
       Value<String?> remoteId,
       Value<bool> isSynced,
+      Value<DateTime> lastModified,
       Value<int> rowid,
     });
 typedef $$DayPlansTableUpdateCompanionBuilder =
@@ -2151,6 +2377,7 @@ typedef $$DayPlansTableUpdateCompanionBuilder =
       Value<List<ExercisePlan>> exercisePlans,
       Value<String?> remoteId,
       Value<bool> isSynced,
+      Value<DateTime> lastModified,
       Value<int> rowid,
     });
 
@@ -2213,6 +2440,11 @@ class $$DayPlansTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2279,6 +2511,11 @@ class $$DayPlansTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$RoutinesTableOrderingComposer get routineId {
     final $$RoutinesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -2332,6 +2569,11 @@ class $$DayPlansTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
 
   $$RoutinesTableAnnotationComposer get routineId {
     final $$RoutinesTableAnnotationComposer composer = $composerBuilder(
@@ -2392,6 +2634,7 @@ class $$DayPlansTableTableManager
                 Value<List<ExercisePlan>> exercisePlans = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DayPlansCompanion(
                 id: id,
@@ -2401,6 +2644,7 @@ class $$DayPlansTableTableManager
                 exercisePlans: exercisePlans,
                 remoteId: remoteId,
                 isSynced: isSynced,
+                lastModified: lastModified,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2412,6 +2656,7 @@ class $$DayPlansTableTableManager
                 required List<ExercisePlan> exercisePlans,
                 Value<String?> remoteId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DayPlansCompanion.insert(
                 id: id,
@@ -2421,6 +2666,7 @@ class $$DayPlansTableTableManager
                 exercisePlans: exercisePlans,
                 remoteId: remoteId,
                 isSynced: isSynced,
+                lastModified: lastModified,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2501,6 +2747,7 @@ typedef $$SetLogsTableCreateCompanionBuilder =
       required int dayIndex,
       Value<String?> remoteId,
       Value<bool> isSynced,
+      Value<DateTime> lastModified,
       Value<String> setType,
       Value<int> rowid,
     });
@@ -2515,6 +2762,7 @@ typedef $$SetLogsTableUpdateCompanionBuilder =
       Value<int> dayIndex,
       Value<String?> remoteId,
       Value<bool> isSynced,
+      Value<DateTime> lastModified,
       Value<String> setType,
       Value<int> rowid,
     });
@@ -2570,6 +2818,11 @@ class $$SetLogsTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2633,6 +2886,11 @@ class $$SetLogsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get setType => $composableBuilder(
     column: $table.setType,
     builder: (column) => ColumnOrderings(column),
@@ -2677,6 +2935,11 @@ class $$SetLogsTableAnnotationComposer
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get setType =>
       $composableBuilder(column: $table.setType, builder: (column) => column);
 }
@@ -2718,6 +2981,7 @@ class $$SetLogsTableTableManager
                 Value<int> dayIndex = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
                 Value<String> setType = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SetLogsCompanion(
@@ -2730,6 +2994,7 @@ class $$SetLogsTableTableManager
                 dayIndex: dayIndex,
                 remoteId: remoteId,
                 isSynced: isSynced,
+                lastModified: lastModified,
                 setType: setType,
                 rowid: rowid,
               ),
@@ -2744,6 +3009,7 @@ class $$SetLogsTableTableManager
                 required int dayIndex,
                 Value<String?> remoteId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
                 Value<String> setType = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SetLogsCompanion.insert(
@@ -2756,6 +3022,7 @@ class $$SetLogsTableTableManager
                 dayIndex: dayIndex,
                 remoteId: remoteId,
                 isSynced: isSynced,
+                lastModified: lastModified,
                 setType: setType,
                 rowid: rowid,
               ),
@@ -2788,6 +3055,7 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<String?> muscleGroup,
       Value<String?> remoteId,
       Value<bool> isSynced,
+      Value<DateTime> lastModified,
       Value<int> rowid,
     });
 typedef $$ExercisesTableUpdateCompanionBuilder =
@@ -2797,6 +3065,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<String?> muscleGroup,
       Value<String?> remoteId,
       Value<bool> isSynced,
+      Value<DateTime> lastModified,
       Value<int> rowid,
     });
 
@@ -2831,6 +3100,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2868,6 +3142,11 @@ class $$ExercisesTableOrderingComposer
     column: $table.isSynced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExercisesTableAnnotationComposer
@@ -2895,6 +3174,11 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
 }
 
 class $$ExercisesTableTableManager
@@ -2930,6 +3214,7 @@ class $$ExercisesTableTableManager
                 Value<String?> muscleGroup = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion(
                 id: id,
@@ -2937,6 +3222,7 @@ class $$ExercisesTableTableManager
                 muscleGroup: muscleGroup,
                 remoteId: remoteId,
                 isSynced: isSynced,
+                lastModified: lastModified,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2946,6 +3232,7 @@ class $$ExercisesTableTableManager
                 Value<String?> muscleGroup = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion.insert(
                 id: id,
@@ -2953,6 +3240,7 @@ class $$ExercisesTableTableManager
                 muscleGroup: muscleGroup,
                 remoteId: remoteId,
                 isSynced: isSynced,
+                lastModified: lastModified,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
