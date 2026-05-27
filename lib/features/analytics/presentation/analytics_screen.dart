@@ -2,10 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:drift/drift.dart' hide isNull, isNotNull, Column;
 import '../../workout/domain/workout_repository.dart';
-import '../../../core/database/database.dart';
-import '../../../core/database/database_provider.dart';
+import '../domain/analytics_repository.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   final String? initialExercise;
@@ -15,11 +13,22 @@ class ProgressScreen extends ConsumerStatefulWidget {
   ConsumerState<ProgressScreen> createState() => _ProgressScreenState();
 }
 
+enum AnalyticsMetric {
+  maxWeight('Max Weight', 'kg'),
+  volume('Volume', 'kg'),
+  oneRepMax('Est. 1RM', 'kg');
+
+  final String label;
+  final String unit;
+  const AnalyticsMetric(this.label, this.unit);
+}
+
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   String? _selectedExercise;
+  AnalyticsMetric _selectedMetric = AnalyticsMetric.maxWeight;
   String _timeRange = '1M';
   List<String> _allExercises = [];
-  List<SetLog> _history = [];
+  List<ChartPoint> _history = [];
 
   @override
   void initState() {
@@ -42,16 +51,25 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Future<void> _loadHistory() async {
-    // For simplicity, we query all and filter locally in v1
-    final db = ref.read(databaseProvider);
-    final query = db.select(db.setLogs)
-      ..where((t) => t.exerciseName.equals(_selectedExercise!))
-      ..orderBy([(t) => OrderingTerm(expression: t.timestamp)]);
+    if (_selectedExercise == null) return;
     
-    final results = await query.get();
+    final repo = ref.read(analyticsRepositoryProvider);
+    final List<ChartPoint> data;
+    
+    switch (_selectedMetric) {
+      case AnalyticsMetric.maxWeight:
+        data = await repo.getMaxWeightHistory(_selectedExercise!);
+        break;
+      case AnalyticsMetric.volume:
+        data = await repo.getVolumeHistory(_selectedExercise!);
+        break;
+      case AnalyticsMetric.oneRepMax:
+        data = await repo.getOneRepMaxHistory(_selectedExercise!);
+        break;
+    }
     
     setState(() {
-      _history = results;
+      _history = data;
     });
   }
 
@@ -76,6 +94,22 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               },
             ),
             const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  SegmentedButton<AnalyticsMetric>(
+                    segments: AnalyticsMetric.values.map((m) => ButtonSegment(value: m, label: Text(m.label))).toList(),
+                    selected: {_selectedMetric},
+                    onSelectionChanged: (val) {
+                      setState(() => _selectedMetric = val.first);
+                      _loadHistory();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             SegmentedButton<String>(
               segments: const [
                 ButtonSegment(value: '1M', label: Text('1M')),
@@ -85,7 +119,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               selected: {_timeRange},
               onSelectionChanged: (val) {
                 setState(() => _timeRange = val.first);
-                // Filter logic would go here in a more robust version
               },
             ),
             const SizedBox(height: 32),
@@ -99,20 +132,35 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
+                              reservedSize: 30,
                               getTitlesWidget: (value, meta) {
                                 if (_history.isEmpty) return const SizedBox.shrink();
                                 final index = value.toInt();
                                 if (index < 0 || index >= _history.length) return const SizedBox.shrink();
-                                if (index % ( (_history.length / 4).ceil() ) != 0) return const SizedBox.shrink();
+                                if (index % ( (_history.length / 4).ceil().clamp(1, 100) ) != 0) return const SizedBox.shrink();
                                 
-                                return Text(
-                                  DateFormat('MMM d').format(_history[index].timestamp),
-                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    DateFormat('MMM d').format(_history[index].date),
+                                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                  ),
                                 );
                               },
                             ),
                           ),
-                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40)),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true, 
+                              reservedSize: 45,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value > 1000 ? '${(value/1000).toStringAsFixed(1)}t' : value.toStringAsFixed(0),
+                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                );
+                              }
+                            )
+                          ),
                           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
@@ -120,7 +168,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         lineBarsData: [
                           LineChartBarData(
                             spots: _history.asMap().entries.map((e) {
-                              return FlSpot(e.key.toDouble(), e.value.weightKg);
+                              return FlSpot(e.key.toDouble(), e.value.value);
                             }).toList(),
                             isCurved: true,
                             color: Colors.teal,
@@ -132,6 +180,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             ),
                           ),
                         ],
+                        lineTouchData: LineTouchData(
+                          touchTooltipData: LineTouchTooltipData(
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                final point = _history[spot.x.toInt()];
+                                return LineTooltipItem(
+                                  '${DateFormat('MMM d').format(point.date)}\n${point.value.toStringAsFixed(1)} ${_selectedMetric.unit}',
+                                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
                       ),
                     ),
             ),
