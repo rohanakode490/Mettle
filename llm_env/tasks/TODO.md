@@ -1,5 +1,3 @@
-# Mettle App - Task List
-
 ## DONE
 - [x] Multi-agent environment setup (llm_env structure).
 - [x] Initialize Flutter Project with basic dependencies (Riverpod, Drift, Supabase).
@@ -25,8 +23,15 @@
 - [x] Fix build and runtime errors after schema evolution (v6).
 - [x] Fix "Blank Screen" bug by replacing Navigator.pop with tab switching.
 - [x] Fix "Loading Hang" bug by stabilizing database/navigation providers.
-
-## NEXT STEPS
 - [x] Implement volume charts and 1RM estimation in Progress screen.
 - [x] Implement "Pull" sync logic for new device login.
+- [x] Changing the logo, add the app name (Mettle) wherever necessary.
+- [x] Set default set as 3, and reps as 8-12 instead of question mark.
+- [x] Adding feature so that user can add extra exercise on the go (during workout).
+- [x] Fix: Changes in routine not shown on the home screen (syncing/refreshing issue).
+- [x] Setting up signup and login page with Supabase.
+- [x] Fix: App crash on launch due to MainActivity package mismatch (migrated to com.mettle.app).
+- [x] Improvement: Unified minimalist Exercise Selection Sheet (replaced clunky Autocomplete/Dialogs).
+
+## NEXT STEPS
 - [ ] Add haptic feedback for set logging and day completion.

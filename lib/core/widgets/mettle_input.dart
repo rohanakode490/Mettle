@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class MettleInput extends StatelessWidget {
   final String label;
@@ -6,6 +7,7 @@ class MettleInput extends StatelessWidget {
   final String? hint;
   final TextInputType keyboardType;
   final double? width;
+  final List<TextInputFormatter>? inputFormatters;
 
   const MettleInput({
     super.key,
@@ -14,6 +16,7 @@ class MettleInput extends StatelessWidget {
     this.hint,
     this.keyboardType = TextInputType.number,
     this.width,
+    this.inputFormatters,
   });
 
   @override
@@ -41,7 +44,7 @@ class MettleInput extends StatelessWidget {
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w800,
-              color: theme.colorScheme.primary.withOpacity(0.7),
+              color: theme.colorScheme.primary.withValues(alpha: 0.7),
               letterSpacing: 1.0,
             ),
           ),
@@ -50,6 +53,7 @@ class MettleInput extends StatelessWidget {
             controller: controller,
             textAlign: TextAlign.center,
             keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
