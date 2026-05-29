@@ -85,7 +85,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DropdownButtonFormField<String>(
-              value: _selectedExercise,
+              initialValue: _selectedExercise,
               decoration: const InputDecoration(labelText: 'Movement', border: OutlineInputBorder()),
               items: _allExercises.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
               onChanged: (val) {
@@ -176,7 +176,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             dotData: const FlDotData(show: true),
                             belowBarData: BarAreaData(
                               show: true,
-                              color: Colors.teal.withOpacity(0.1),
+                              color: Colors.teal.withValues(alpha: 0.1),
                             ),
                           ),
                         ],

@@ -4,8 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:workmanager/workmanager.dart';
 import 'sync_repository.dart';
-import '../database/database_provider.dart';
-import '../database/supabase_provider.dart';
 
 const syncTaskName = "com.mettle.syncTask";
 
@@ -21,7 +19,6 @@ void callbackDispatcher() {
         anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
       );
     } catch (e) {
-      print('Background initialization failed: $e');
       return false;
     }
 
@@ -44,7 +41,6 @@ class SyncWorker {
   static Future<void> initialize() async {
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: true, // Set to false in production
     );
   }
 

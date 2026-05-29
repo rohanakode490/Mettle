@@ -39,17 +39,17 @@ class RoutineManagerScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(24),
             itemCount: routines.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            separatorBuilder: (_, _) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final routine = routines[index];
               final isActive = activeRoutine?.id == routine.id;
 
               return Card(
-                color: isActive ? Colors.teal.withOpacity(0.05) : null,
+                color: isActive ? Colors.teal.withValues(alpha: 0.05) : null,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
-                    color: isActive ? Colors.teal.withOpacity(0.3) : Colors.grey[900]!,
+                    color: isActive ? Colors.teal.withValues(alpha: 0.3) : Colors.grey[900]!,
                   ),
                 ),
                 child: ListTile(

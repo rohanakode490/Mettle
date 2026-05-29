@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/theme_provider.dart';
+import '../../auth/presentation/auth_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -11,10 +12,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLogin = true;
-
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
@@ -43,20 +40,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Sign in to sync your data across devices.',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
-            const SizedBox(height: 16),
-            TextField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email')),
-            TextField(controller: _passwordController, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton(
-                onPressed: _handleAuth,
-                child: Text(_isLogin ? 'LOG IN' : 'SIGN UP'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  ).then((_) => setState(() {}));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
-            ),
-            TextButton(
-              onPressed: () => setState(() => _isLogin = !_isLogin),
-              child: Text(_isLogin ? 'Need an account? Sign up' : 'Already have an account? Log in'),
             ),
           ] else ...[
             ListTile(
@@ -87,26 +88,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _handleAuth() async {
-    try {
-      if (_isLogin) {
-        await Supabase.instance.client.auth.signInWithPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
-      } else {
-        await Supabase.instance.client.auth.signUp(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
-      }
-      if (mounted) setState(() {});
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    }
   }
 }

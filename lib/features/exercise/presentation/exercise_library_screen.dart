@@ -3,22 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym_log/core/database/database.dart';
 import '../domain/exercise_repository.dart';
 
-// Using simple Notifiers since StateProvider is unavailable or restricted in this project's version
-class SearchQueryNotifier extends AutoDisposeNotifier<String> {
+// Using simple Notifiers since StateProvider is unavailable in this dev version
+class SearchQueryNotifier extends Notifier<String> {
   @override
   String build() => '';
-  void update(String query) => state = query;
+  @override
+  set state(String value) => super.state = value;
 }
 
-final exerciseSearchQueryProvider = NotifierProvider.autoDispose<SearchQueryNotifier, String>(SearchQueryNotifier.new);
+final exerciseSearchQueryProvider = NotifierProvider<SearchQueryNotifier, String>(SearchQueryNotifier.new);
 
-class MuscleGroupNotifier extends AutoDisposeNotifier<String?> {
+class MuscleGroupNotifier extends Notifier<String?> {
   @override
   String? build() => null;
-  void set(String? group) => state = group;
+  @override
+  set state(String? value) => super.state = value;
 }
 
-final selectedMuscleGroupProvider = NotifierProvider.autoDispose<MuscleGroupNotifier, String?>(MuscleGroupNotifier.new);
+final selectedMuscleGroupProvider = NotifierProvider<MuscleGroupNotifier, String?>(MuscleGroupNotifier.new);
 
 final filteredExercisesProvider = Provider.autoDispose<AsyncValue<List<Exercise>>>((ref) {
   final exercisesAsync = ref.watch(exercisesStreamProvider);
@@ -73,7 +75,7 @@ class ExerciseLibraryScreen extends ConsumerWidget {
                         label: const Text('All'),
                         selected: selectedMuscleGroup == null,
                         onSelected: (_) {
-                          ref.read(selectedMuscleGroupProvider.notifier).set(null);
+                          ref.read(selectedMuscleGroupProvider.notifier).state = null;
                         },
                         backgroundColor: Colors.grey[100],
                         selectedColor: Colors.blue[50],
@@ -87,7 +89,7 @@ class ExerciseLibraryScreen extends ConsumerWidget {
                         label: Text(group),
                         selected: selectedMuscleGroup == group,
                         onSelected: (selected) {
-                          ref.read(selectedMuscleGroupProvider.notifier).set(selected ? group : null);
+                          ref.read(selectedMuscleGroupProvider.notifier).state = selected ? group : null;
                         },
                         backgroundColor: Colors.grey[100],
                         selectedColor: Colors.blue[50],
@@ -157,7 +159,7 @@ class ExerciseLibraryScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: TextField(
-                      onChanged: (value) => ref.read(exerciseSearchQueryProvider.notifier).update(value),
+                      onChanged: (value) => ref.read(exerciseSearchQueryProvider.notifier).state = value,
                       decoration: const InputDecoration(
                         hintText: 'What movement today?',
                         prefixIcon: Icon(Icons.search, color: Colors.grey, size: 20),

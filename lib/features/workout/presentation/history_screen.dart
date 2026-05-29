@@ -207,7 +207,7 @@ class _HistorySetRow extends ConsumerWidget {
         children: [
           CircleAvatar(
             radius: 12,
-            backgroundColor: setLog.setType == 'warmup' ? Colors.orange.withOpacity(0.2) : Colors.teal.withOpacity(0.2),
+            backgroundColor: setLog.setType == 'warmup' ? Colors.orange.withValues(alpha: 0.2) : Colors.teal.withValues(alpha: 0.2),
             child: Text(
               setLog.setType == 'warmup' ? 'W' : 'S',
               style: TextStyle(

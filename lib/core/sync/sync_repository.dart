@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym_log/core/database/database.dart';
 import 'package:gym_log/core/database/database_provider.dart';
@@ -61,7 +62,7 @@ class SyncRepository {
         }
       }
     } catch (e) {
-      print('Pull error (routines): $e');
+      debugPrint('Pull error (routines): $e');
     }
   }
 
@@ -109,7 +110,7 @@ class SyncRepository {
         }
       }
     } catch (e) {
-      print('Pull error (dayPlans): $e');
+      debugPrint('Pull error (dayPlans): $e');
     }
   }
 
@@ -159,7 +160,7 @@ class SyncRepository {
         }
       }
     } catch (e) {
-      print('Pull error (setLogs): $e');
+      debugPrint('Pull error (setLogs): $e');
     }
   }
 
@@ -184,7 +185,7 @@ class SyncRepository {
           ),
         );
       } catch (e) {
-        print('Push error (routine): $e');
+        debugPrint('Push error (routine): $e');
       }
     }
   }
@@ -213,7 +214,7 @@ class SyncRepository {
           ),
         );
       } catch (e) {
-        print('Push error (dayPlan): $e');
+        debugPrint('Push error (dayPlan): $e');
       }
     }
   }
@@ -246,7 +247,7 @@ class SyncRepository {
           ),
         );
       } catch (e) {
-        print('Push error (setLog): $e');
+        debugPrint('Push error (setLog): $e');
       }
     }
   }

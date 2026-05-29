@@ -16,7 +16,7 @@ void main() async {
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    print("Warning: .env file not found. Supabase may fail to initialize.");
+    // .env not found
   }
 
   // Initialize Supabase using env variables
@@ -26,25 +26,22 @@ void main() async {
       anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
     );
   } catch (e) {
-    print("Error: Failed to initialize Supabase: $e");
+    // Supabase init failed
   }
 
   try {
     await SyncWorker.initialize();
     await SyncWorker.schedulePeriodicSync();
   } catch (e) {
-    print("Warning: Failed to initialize SyncWorker: $e");
+    // SyncWorker init failed
   }
 
   // Create a container to access providers before runApp
   final container = ProviderContainer();
   
   // Seed the database with initial routines
-  print("App: Initializing Database...");
   final db = container.read(databaseProvider);
-  print("App: Seeding Data...");
   await SeedData.seed(db);
-  print("App: Data Seeding Complete.");
 
   runApp(
     UncontrolledProviderScope(
@@ -62,7 +59,7 @@ class MyApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
-      title: 'Gym Log',
+      title: 'Mettle',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

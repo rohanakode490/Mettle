@@ -107,7 +107,7 @@ class ExercisePlanListConverter extends TypeConverter<List<ExercisePlan>, String
 @DriftDatabase(tables: [Routines, DayPlans, SetLogs, Exercises])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
-  AppDatabase.forTesting(QueryExecutor super.e);
+  AppDatabase.forTesting(super.e);
 
   @override
   int get schemaVersion => 8;

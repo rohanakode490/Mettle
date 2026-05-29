@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart';
 import 'package:gym_log/core/database/database.dart';
 import 'package:gym_log/core/database/database_provider.dart';
 import 'package:gym_log/features/schedule/presentation/home_screen.dart';

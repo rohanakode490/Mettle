@@ -97,6 +97,33 @@ class RoutineRepository {
       await (db.delete(db.routines)..where((t) => t.id.equals(id))).go();
     });
   }
+
+  Future<void> addExerciseToDayPlan(String routineId, int dayIndex, ExercisePlan plan) async {
+    final currentDayPlan = await (db.select(db.dayPlans)
+          ..where((t) => t.routineId.equals(routineId) & t.dayIndex.equals(dayIndex)))
+        .getSingle();
+    
+    final updatedExercises = List<ExercisePlan>.from(currentDayPlan.exercisePlans)..add(plan);
+    
+    await (db.update(db.dayPlans)
+          ..where((t) => t.routineId.equals(routineId) & t.dayIndex.equals(dayIndex)))
+        .write(
+      DayPlansCompanion(
+        exercisePlans: Value(updatedExercises),
+        isRest: const Value(false),
+        lastModified: Value(DateTime.now()),
+        isSynced: const Value(false),
+      ),
+    );
+    
+    // Also update routine lastModified
+    await (db.update(db.routines)..where((t) => t.id.equals(routineId))).write(
+      RoutinesCompanion(
+        lastModified: Value(DateTime.now()),
+        isSynced: const Value(false),
+      ),
+    );
+  }
 }
 
 final routineRepositoryProvider = Provider<RoutineRepository>((ref) {
