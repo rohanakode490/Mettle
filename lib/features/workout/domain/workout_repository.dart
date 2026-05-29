@@ -133,3 +133,7 @@ final todaySetsProvider = StreamProvider.family<List<SetLog>, String>((ref, arg)
 final historicalSetsProvider = StreamProvider<List<SetLog>>((ref) {
   return ref.watch(workoutRepositoryProvider).watchHistoricalSets();
 });
+
+final exerciseAutocompletePoolProvider = FutureProvider<List<String>>((ref) {
+  return ref.watch(workoutRepositoryProvider).getExerciseAutocompletePool();
+});

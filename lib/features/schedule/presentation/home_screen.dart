@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_haptic_feedback/flutter_haptic_feedback.dart';
 import '../../routine/presentation/active_routine_provider.dart';
 import '../../analytics/presentation/analytics_screen.dart';
 import '../../routine/domain/routine_repository.dart';
@@ -8,6 +10,9 @@ import '../../workout/domain/workout_repository.dart';
 import '../../workout/presentation/completion_provider.dart';
 import '../../../core/database/database.dart';
 import '../../navigation/presentation/navigation_provider.dart';
+import 'package:uuid/uuid.dart';
+import '../../../core/widgets/mettle_logo.dart';
+import '../../../core/widgets/exercise_selection_sheet.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -20,7 +25,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gym Log'),
+        title: const MettleLogo(size: 24),
         actions: [
           IconButton(
             icon: const Icon(Icons.show_chart, color: Colors.teal),
@@ -146,14 +151,47 @@ class _TodayWorkout extends ConsumerWidget {
         final completion = ref.watch(completionProvider);
 
         return Column(
-          children: plan.exercisePlans.map((p) => ExerciseAccordionCard(
+          children: [
+            ...plan.exercisePlans.map((p) => ExerciseAccordionCard(
                   key: ValueKey(p.name),
                   plan: p,
                   routineId: routine.id,
                   dayIndex: dayIndex,
                   isCompleted: completion[p.name] ?? false,
                   allCompleted: false,
-                )).toList(),
+                )),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final pool = await ref.read(exerciseAutocompletePoolProvider.future);
+                  if (!context.mounted) return;
+                  ExerciseSelectionSheet.show(
+                    context: context,
+                    autocompletePool: pool,
+                    onSelected: (name, sets, reps) {
+                      final plan = ExercisePlan(
+                        id: const Uuid().v4(),
+                        name: name,
+                        targetSets: sets,
+                        targetReps: reps,
+                      );
+                      ref.read(routineRepositoryProvider).addExerciseToDayPlan(routine.id, dayIndex, plan);
+                      ref.invalidate(routineWithPlansProvider(routine.id));
+                    },
+                  );
+                },
+                icon: const Icon(Icons.add, color: Colors.teal),
+                label: const Text('CHOOSE A MOVEMENT', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -233,8 +271,8 @@ class _ExerciseAccordionCardState extends ConsumerState<ExerciseAccordionCard> {
               children: [
                 if (widget.plan.targetSets != null || widget.plan.targetReps != null)
                   Text(
-                    'Target: ${widget.plan.targetSets ?? "?"} × ${widget.plan.targetReps ?? "?"}',
-                    style: TextStyle(color: Colors.teal.withOpacity(0.8), fontSize: 12),
+                    'Target: ${widget.plan.targetSets ?? "3"} × ${widget.plan.targetReps ?? "8-12"}',
+                    style: TextStyle(color: Colors.teal.withValues(alpha: 0.8), fontSize: 12),
                   ),
                 _previousSets.isNotEmpty
                     ? Text('Last: ${_previousSets.last.weightKg}kg × ${_previousSets.last.reps}', style: const TextStyle(fontSize: 12))
@@ -317,9 +355,9 @@ class _TodaySetsList extends ConsumerWidget {
   });
 
   int _parseTargetCount() {
-    if (targetSets == null || targetSets!.isEmpty) return 0;
+    if (targetSets == null || targetSets!.isEmpty) return 3;
     final firstNum = RegExp(r'\d+').firstMatch(targetSets!);
-    return firstNum != null ? int.parse(firstNum.group(0)!) : 0;
+    return firstNum != null ? int.parse(firstNum.group(0)!) : 3;
   }
 
   @override
@@ -341,13 +379,15 @@ class _TodaySetsList extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 8.0),
             child: Row(
               children: [
-                SizedBox(width: 40, child: Text('TYPE', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey))),
-                SizedBox(width: 12),
-                Expanded(flex: 3, child: Text('WEIGHT', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey))),
+                SizedBox(width: 40, child: Text('TYPE', textAlign: TextAlign.center, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 0.5))),
                 SizedBox(width: 8),
-                Expanded(flex: 2, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey))),
-                SizedBox(width: 48), // Checkbox area
-                SizedBox(width: 40), // Delete area
+                Expanded(flex: 3, child: Text('PREVIOUS', textAlign: TextAlign.center, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 0.5))),
+                SizedBox(width: 8),
+                Expanded(flex: 3, child: Text('WEIGHT', textAlign: TextAlign.center, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 0.5))),
+                SizedBox(width: 8),
+                Expanded(flex: 2, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 0.5))),
+                SizedBox(width: 44), // Checkmark area
+                SizedBox(width: 32), // Delete area
               ],
             ),
           ),
@@ -478,11 +518,11 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
     super.dispose();
   }
 
-  void _onChanged() {
+  void _saveSet() {
     final weight = double.tryParse(_weightController.text) ?? 0;
     final reps = int.tryParse(_repsController.text) ?? 0;
 
-    if (weight > 0 || reps > 0) {
+    if (weight > 0 && reps > 0) {
       if (widget.setLog != null) {
         ref.read(workoutRepositoryProvider).updateSetLog(
               id: widget.setLog!.id,
@@ -503,6 +543,7 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
           widget.onSaved?.call();
         }
       }
+      FlutterHapticFeedback.notification(NotificationFeedbackType.success);
     }
   }
 
@@ -535,7 +576,7 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: const Size(30, 30),
-                backgroundColor: _isWarmup ? Colors.orange.withOpacity(0.1) : theme.colorScheme.primary.withOpacity(0.1),
+                backgroundColor: _isWarmup ? Colors.orange.withValues(alpha: 0.1) : theme.colorScheme.primary.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               ),
               child: Text(
@@ -548,7 +589,22 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
+          // Previous Column
+          Expanded(
+            flex: 3,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              alignment: Alignment.center,
+              child: Text(
+                widget.previousSetLog != null 
+                  ? '${widget.previousSetLog!.weightKg} × ${widget.previousSetLog!.reps}'
+                  : '-',
+                style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           // Weight Input
           Expanded(
             flex: 3,
@@ -556,16 +612,21 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
               controller: _weightController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d?')),
+              ],
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
-                hintText: widget.previousSetLog != null ? '${widget.previousSetLog!.weightKg}' : 'kg',
-                fillColor: isLogged ? theme.colorScheme.primary.withOpacity(0.05) : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: isLogged ? Colors.teal : Colors.grey.withValues(alpha: 0.3)),
+                ),
+                hintText: 'kg',
+                fillColor: isLogged ? Colors.teal.withValues(alpha: 0.05) : null,
                 filled: isLogged,
               ),
-              onChanged: (_) => _onChanged(),
             ),
           ),
           const SizedBox(width: 8),
@@ -576,32 +637,43 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
               controller: _repsController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+              ],
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
-                hintText: widget.previousSetLog != null ? '${widget.previousSetLog!.reps}' : '0',
-                fillColor: isLogged ? theme.colorScheme.primary.withOpacity(0.05) : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: isLogged ? Colors.teal : Colors.grey.withValues(alpha: 0.3)),
+                ),
+                hintText: '0',
+                fillColor: isLogged ? Colors.teal.withValues(alpha: 0.05) : null,
                 filled: isLogged,
               ),
-              onChanged: (_) => _onChanged(),
             ),
           ),
-          // Status Checkmark
-          SizedBox(
-            width: 48,
-            child: Icon(
-              isLogged ? Icons.check_circle : Icons.check_circle_outline,
-              color: isLogged ? Colors.green : Colors.grey.withOpacity(0.3),
-              size: 20,
-            ),
-          ),
-          // Delete Button
+          const SizedBox(width: 4),
+          // Manual Completion Button
           SizedBox(
             width: 40,
             child: IconButton(
-              icon: const Icon(Icons.close, size: 18, color: Colors.redAccent),
+              icon: Icon(
+                isLogged ? Icons.check_circle : Icons.check_circle_outline,
+                color: isLogged ? Colors.green : Colors.grey.withValues(alpha: 0.3),
+                size: 24,
+              ),
+              onPressed: _saveSet,
+            ),
+          ),
+          // Delete/Clear Button
+          SizedBox(
+            width: 32,
+            child: IconButton(
+              icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
               onPressed: () {
                 if (isLogged) {
                   ref.read(workoutRepositoryProvider).deleteSetLog(widget.setLog!.id);
