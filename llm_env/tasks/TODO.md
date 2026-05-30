@@ -32,6 +32,8 @@
 - [x] Setting up signup and login page with Supabase.
 - [x] Fix: App crash on launch due to MainActivity package mismatch (migrated to com.mettle.app).
 - [x] Improvement: Unified minimalist Exercise Selection Sheet (replaced clunky Autocomplete/Dialogs).
+- [x] Improvement: Reactive Profile & Settings UI with prominent Auth options.
+- [x] Improvement: Comprehensive Auth error handling and pre-submission validation.
 
 ## NEXT STEPS
 - [ ] Add haptic feedback for set logging and day completion.

@@ -14,6 +14,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   bool _isLogin = true;
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -23,10 +24,24 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _handleAuth() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    setState(() => _errorMessage = null);
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Please fill in all fields');
+      return;
+    }
+
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      setState(() => _errorMessage = 'Please enter a valid email address');
+      return;
+    }
+
+    if (!_isLogin && password.length < 6) {
+      setState(() => _errorMessage = 'Password must be at least 6 characters');
       return;
     }
 
@@ -34,27 +49,25 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       if (_isLogin) {
         await Supabase.instance.client.auth.signInWithPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
+          email: email,
+          password: password,
         );
       } else {
         await Supabase.instance.client.auth.signUp(
-          email: _emailController.text,
-          password: _passwordController.text,
+          email: email,
+          password: password,
         );
       }
       if (mounted) Navigator.pop(context);
     } on AuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
-      }
+      if (mounted) setState(() => _errorMessage = e.message);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An unexpected error occurred')),
-        );
+        if (e.toString().contains('SocketException')) {
+          setState(() => _errorMessage = 'Network error. Please check your connection.');
+        } else {
+          setState(() => _errorMessage = 'An unexpected error occurred');
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -113,6 +126,17 @@ class _AuthScreenState extends State<AuthScreen> {
                 obscureText: true,
                 isDark: isDark,
               ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 24),
+                Text(
+                  _errorMessage!,
+                  style: TextStyle(
+                    color: Colors.red.shade400,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
               const SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
@@ -148,7 +172,10 @@ class _AuthScreenState extends State<AuthScreen> {
               const Spacer(),
               Center(
                 child: TextButton(
-                  onPressed: () => setState(() => _isLogin = !_isLogin),
+                  onPressed: () => setState(() {
+                    _isLogin = !_isLogin;
+                    _errorMessage = null;
+                  }),
                   child: Text(
                     _isLogin 
                       ? 'New to Mettle? Create an account' 
