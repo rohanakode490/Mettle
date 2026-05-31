@@ -34,6 +34,8 @@
 - [x] Improvement: Unified minimalist Exercise Selection Sheet (replaced clunky Autocomplete/Dialogs).
 - [x] Improvement: Reactive Profile & Settings UI with prominent Auth options.
 - [x] Improvement: Comprehensive Auth error handling and pre-submission validation.
+- [x] Feature: Added support for Dropsets with visual indicators and type switching (W/S/D).
+- [x] Feature: Added support for Supersets with grouping logic in Routine Editor and Home Screen.
 
 ## NEXT STEPS
 - [ ] Add haptic feedback for set logging and day completion.

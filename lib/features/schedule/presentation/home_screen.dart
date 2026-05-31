@@ -150,16 +150,41 @@ class _TodayWorkout extends ConsumerWidget {
 
         final completion = ref.watch(completionProvider);
 
+        // Group exercises by supersetId
+        final List<List<ExercisePlan>> groupedPlans = [];
+        for (final p in plan.exercisePlans) {
+          if (p.supersetId != null && 
+              groupedPlans.isNotEmpty && 
+              groupedPlans.last.any((prev) => prev.supersetId == p.supersetId)) {
+            groupedPlans.last.add(p);
+          } else {
+            groupedPlans.add([p]);
+          }
+        }
+
         return Column(
           children: [
-            ...plan.exercisePlans.map((p) => ExerciseAccordionCard(
-                  key: ValueKey(p.name),
+            ...groupedPlans.expand((group) {
+              return group.asMap().entries.map((entry) {
+                final index = entry.key;
+                final p = entry.value;
+                final isFirst = index == 0;
+                final isLast = index == group.length - 1;
+                final isSuperset = group.length > 1;
+
+                return ExerciseAccordionCard(
+                  key: ValueKey(p.id),
                   plan: p,
                   routineId: routine.id,
                   dayIndex: dayIndex,
                   isCompleted: completion[p.name] ?? false,
                   allCompleted: false,
-                )),
+                  isFirstInGroup: isFirst,
+                  isLastInGroup: isLast,
+                  isInSuperset: isSuperset,
+                );
+              });
+            }),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -206,6 +231,9 @@ class ExerciseAccordionCard extends ConsumerStatefulWidget {
   final int dayIndex;
   final bool isCompleted;
   final bool allCompleted;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+  final bool isInSuperset;
 
   const ExerciseAccordionCard({
     super.key,
@@ -214,6 +242,9 @@ class ExerciseAccordionCard extends ConsumerStatefulWidget {
     required this.dayIndex,
     required this.isCompleted,
     required this.allCompleted,
+    this.isFirstInGroup = true,
+    this.isLastInGroup = true,
+    this.isInSuperset = false,
   });
 
   @override
@@ -243,9 +274,37 @@ class _ExerciseAccordionCardState extends ConsumerState<ExerciseAccordionCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(
+        bottom: widget.isLastInGroup ? 16 : 0,
+        top: widget.isFirstInGroup ? 0 : 0,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: widget.isFirstInGroup ? const Radius.circular(12) : Radius.zero,
+          bottom: widget.isLastInGroup ? const Radius.circular(12) : Radius.zero,
+        ),
+      ),
+      elevation: widget.isInSuperset ? 2 : 1,
       child: Column(
         children: [
+          if (widget.isFirstInGroup && widget.isInSuperset)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.teal.withValues(alpha: 0.1),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: const Text(
+                'SUPERSET',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.teal,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
           ListTile(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
             onLongPress: () {
@@ -281,6 +340,8 @@ class _ExerciseAccordionCardState extends ConsumerState<ExerciseAccordionCard> {
             ),
             trailing: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
           ),
+          if (!widget.isLastInGroup && widget.isInSuperset)
+            const Divider(height: 1, indent: 16, endIndent: 16),
           AnimatedSize(
             duration: const Duration(milliseconds: 200),
             alignment: Alignment.topCenter,
@@ -485,14 +546,14 @@ class _EditableSetRow extends ConsumerStatefulWidget {
 class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
   late TextEditingController _weightController;
   late TextEditingController _repsController;
-  bool _isWarmup = false;
+  late String _setType;
 
   @override
   void initState() {
     super.initState();
     _weightController = TextEditingController(text: widget.setLog?.weightKg.toString() ?? '');
     _repsController = TextEditingController(text: widget.setLog?.reps.toString() ?? '');
-    _isWarmup = widget.setLog?.setType == 'warmup' || (widget.setLog == null && widget.previousSetLog?.setType == 'warmup');
+    _setType = widget.setLog?.setType ?? widget.previousSetLog?.setType ?? 'work';
   }
 
   @override
@@ -502,11 +563,11 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
       if (widget.setLog != null) {
         _weightController.text = widget.setLog!.weightKg.toString();
         _repsController.text = widget.setLog!.reps.toString();
-        _isWarmup = widget.setLog!.setType == 'warmup';
+        _setType = widget.setLog!.setType;
       } else if (!widget.isExtraPlaceholder) {
         _weightController.clear();
         _repsController.clear();
-        _isWarmup = widget.previousSetLog?.setType == 'warmup';
+        _setType = widget.previousSetLog?.setType ?? 'work';
       }
     }
   }
@@ -528,7 +589,7 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
               id: widget.setLog!.id,
               weight: weight,
               reps: reps,
-              setType: _isWarmup ? 'warmup' : 'work',
+              setType: _setType,
             );
       } else {
         ref.read(workoutRepositoryProvider).logSet(
@@ -537,13 +598,50 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
               reps: reps,
               routineId: widget.routineId,
               dayIndex: widget.dayIndex,
-              setType: _isWarmup ? 'warmup' : 'work',
+              setType: _setType,
             );
         if (widget.isExtraPlaceholder) {
           widget.onSaved?.call();
         }
       }
       FlutterHapticFeedback.notification(NotificationFeedbackType.success);
+    }
+  }
+
+  String _getNextSetType(String current) {
+    switch (current) {
+      case 'work':
+        return 'warmup';
+      case 'warmup':
+        return 'dropset';
+      case 'dropset':
+        return 'work';
+      default:
+        return 'work';
+    }
+  }
+
+  Color _getSetTypeColor(String type, ThemeData theme) {
+    switch (type) {
+      case 'warmup':
+        return Colors.orange;
+      case 'dropset':
+        return Colors.purple;
+      case 'work':
+      default:
+        return theme.colorScheme.primary;
+    }
+  }
+
+  String _getSetTypeLabel(String type) {
+    switch (type) {
+      case 'warmup':
+        return 'W';
+      case 'dropset':
+        return 'D';
+      case 'work':
+      default:
+        return 'S';
     }
   }
 
@@ -556,12 +654,12 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          // Set Type Toggle (W/S)
+          // Set Type Toggle (W/S/D)
           SizedBox(
             width: 40,
             child: TextButton(
               onPressed: () {
-                setState(() => _isWarmup = !_isWarmup);
+                setState(() => _setType = _getNextSetType(_setType));
                 if (isLogged) {
                   final weight = double.tryParse(_weightController.text) ?? 0;
                   final reps = int.tryParse(_repsController.text) ?? 0;
@@ -569,22 +667,22 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
                         id: widget.setLog!.id,
                         weight: weight,
                         reps: reps,
-                        setType: _isWarmup ? 'warmup' : 'work',
+                        setType: _setType,
                       );
                 }
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: const Size(30, 30),
-                backgroundColor: _isWarmup ? Colors.orange.withValues(alpha: 0.1) : theme.colorScheme.primary.withValues(alpha: 0.1),
+                backgroundColor: _getSetTypeColor(_setType, theme).withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               ),
               child: Text(
-                _isWarmup ? 'W' : 'S',
+                _getSetTypeLabel(_setType),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: _isWarmup ? Colors.orange : theme.colorScheme.primary,
+                  color: _getSetTypeColor(_setType, theme),
                 ),
               ),
             ),

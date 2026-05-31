@@ -76,6 +76,45 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
     });
   }
 
+  void _toggleSuperset(int dayIndex, int index) {
+    if (index == 0) return;
+    setState(() {
+      final exercises = _weeklyExercises[dayIndex]!;
+      final current = exercises[index];
+      final previous = exercises[index - 1];
+
+      if (current.supersetId != null && current.supersetId == previous.supersetId) {
+        // Break the link
+        exercises[index] = ExercisePlan(
+          id: current.id,
+          name: current.name,
+          targetSets: current.targetSets,
+          targetReps: current.targetReps,
+          supersetId: null,
+        );
+      } else {
+        // Link to previous
+        final id = previous.supersetId ?? const Uuid().v4();
+        if (previous.supersetId == null) {
+          exercises[index - 1] = ExercisePlan(
+            id: previous.id,
+            name: previous.name,
+            targetSets: previous.targetSets,
+            targetReps: previous.targetReps,
+            supersetId: id,
+          );
+        }
+        exercises[index] = ExercisePlan(
+          id: current.id,
+          name: current.name,
+          targetSets: current.targetSets,
+          targetReps: current.targetReps,
+          supersetId: id,
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -193,28 +232,53 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
             },
             itemBuilder: (context, index) {
               final plan = exercises[index];
-              return ListTile(
+              final isSuperset = plan.supersetId != null && 
+                                index > 0 && 
+                                exercises[index-1].supersetId == plan.supersetId;
+              
+              return Column(
                 key: ValueKey(plan.id),
-                title: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Target: ${plan.targetSets ?? "3"} sets × ${plan.targetReps ?? "8-12"} reps'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          _weeklyExercises[dayIndex]!.removeAt(index);
-                          if (_weeklyExercises[dayIndex]!.isEmpty) _isRestDay[dayIndex] = true;
-                        });
-                      },
+                children: [
+                  if (isSuperset)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 32),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Icon(Icons.link, size: 16, color: Colors.teal),
+                      ),
                     ),
-                    ReorderableDragStartListener(
-                      index: index,
-                      child: const Icon(Icons.drag_handle),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('Target: ${plan.targetSets ?? "3"} sets × ${plan.targetReps ?? "8-12"} reps'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (index > 0)
+                          IconButton(
+                            icon: Icon(
+                              isSuperset ? Icons.link_off : Icons.link,
+                              color: isSuperset ? Colors.teal : Colors.grey,
+                            ),
+                            onPressed: () => _toggleSuperset(dayIndex, index),
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              _weeklyExercises[dayIndex]!.removeAt(index);
+                              if (_weeklyExercises[dayIndex]!.isEmpty) _isRestDay[dayIndex] = true;
+                            });
+                          },
+                        ),
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(Icons.drag_handle),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               );
             },
           ),

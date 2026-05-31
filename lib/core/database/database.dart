@@ -13,14 +13,22 @@ class ExercisePlan {
   final String name;
   final String? targetSets;
   final String? targetReps;
+  final String? supersetId;
 
-  ExercisePlan({required this.id, required this.name, this.targetSets, this.targetReps});
+  ExercisePlan({
+    required this.id,
+    required this.name,
+    this.targetSets,
+    this.targetReps,
+    this.supersetId,
+  });
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'targetSets': targetSets,
     'targetReps': targetReps,
+    'supersetId': supersetId,
   };
 
   factory ExercisePlan.fromJson(Map<String, dynamic> json) => ExercisePlan(
@@ -28,6 +36,7 @@ class ExercisePlan {
     name: json['name'] as String,
     targetSets: json['targetSets'] as String?,
     targetReps: json['targetReps'] as String?,
+    supersetId: json['supersetId'] as String?,
   );
 }
 
@@ -110,7 +119,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -119,7 +128,7 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (m, from, to) async {
-        if (from < 8) {
+        if (from < 9) {
           for (final table in allTables) {
             await m.drop(table);
           }
