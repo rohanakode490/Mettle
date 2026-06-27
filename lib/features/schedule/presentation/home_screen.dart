@@ -585,6 +585,16 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
 
     if (weight > 0 && reps > 0) {
       if (widget.setLog != null) {
+        final hasChanged = weight != widget.setLog!.weightKg ||
+            reps != widget.setLog!.reps ||
+            _setType != widget.setLog!.setType;
+
+        if (!hasChanged) {
+          ref.read(workoutRepositoryProvider).deleteSetLog(widget.setLog!.id);
+          FlutterHapticFeedback.impact(ImpactFeedbackStyle.light).catchError((_) {});
+          return;
+        }
+
         ref.read(workoutRepositoryProvider).updateSetLog(
               id: widget.setLog!.id,
               weight: weight,
@@ -604,7 +614,7 @@ class _EditableSetRowState extends ConsumerState<_EditableSetRow> {
           widget.onSaved?.call();
         }
       }
-      FlutterHapticFeedback.notification(NotificationFeedbackType.success);
+      FlutterHapticFeedback.notification(NotificationFeedbackType.success).catchError((_) {});
     }
   }
 

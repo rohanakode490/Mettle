@@ -98,6 +98,9 @@ void main() {
     // Type in the second row (the extra one)
     // textfields: 0,1 (Set 1), 2,3 (Set 2)
     await tester.enterText(find.byType(TextField).at(2), '50');
+    await tester.enterText(find.byType(TextField).at(3), '10');
+    await tester.tap(find.byIcon(Icons.check_circle_outline).at(1));
+    await tester.pumpAndSettle();
     
     // Allow DB write to complete and Stream to fire
     // We need a longer delay for NativeDatabase to flush and Stream to notify
